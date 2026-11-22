@@ -32,18 +32,18 @@ ROWS = r"""
 4|frame|"And pulls his hand out… zoom to"|SB||
 5|frame|Paul in mid-leap, pencil rough|SB|paul|
 6|design|Costume cards: enthroned dignitary in green; figure in pink|M|court|Photographed in an album sleeve.
-7|vision|Dog-headed sentries before the striped tent|IS||
+7|vision|Dog-beings walk into the building|IS||
 8|frame|A face in three-quarter view, pencil rough|SB||
 9|design|Figure in a feathered sunburst collar|U|court|
-10|vision|The court in red|IS||
+10|vision|Humans in a room with computers behind them|IS||
 11|frame|Two faces, pencil rough|SB||
 12|machine|The Emperor's palace, seen from above|F||
 13|design|Costume cards: "Duncan Idaho" and "Leto"|M|duncan,leto|Named as in plate 90. Other captions in this archive give Duncan Idaho a different costume.
 14|lineup|Les Atreides: Jessica, Paul, Leto|SB|jessica,paul,leto|
 15|lineup|Hawatt, Idaho, Halleck, Yueh|SB|hawat,duncan,gurney,yueh|
 16|frame|Four dancers fit anti-gravity bracelets to the Baron|SB|baron|
-17|vision|A crucified figure before the blue curtain|IS||
-18|vision|DUNE, title panel|IS||
+17|vision|Dog-beings at the foot of the crucifix|IS||
+18|vision|DUNE title card, with two people walking away|IS||
 19|frame|A body hangs in the air between robed watchers|SB||
 20|frame|The robot's vision of Paul|SB|paul|
 21|design|Costume cards: winged armour with skull emblem; Guild envoy|M|court,guild|
@@ -64,42 +64,42 @@ ROWS = r"""
 36|frame|Peter cuts off Leto's right arm|SB|piter,leto|
 37|frame|The Baron afloat between hooded figures|SB|baron|
 38|design|Costume cards: dignitary in midnight blue; skeletal suit|M|court|
-39|vision|Dog-headed pilots in a red craft|IS||
+39|vision|Dog-beings in their vehicle|IS||
 40|frame|The robot gets up|SB||
-41|vision|Rat-headed riders enter the blue hall|IS||
-42|vision|A giant head throws its gaze across a barge|IS||
-43|vision|Spiked spheres fall among red soldiers|IS||
-44|vision|A finned ship in blue space|IS||
-45|vision|The green tent-palace and its stair|IS||
-46|vision|The amphitheatre pit|IS||
-47|vision|A sun-machine burning in magenta|IS||
+41|vision|Dog-beings see the crucifix|IS||
+42|vision|Dog-beings watch the projection|IS||
+43|vision|Men fighting the white blobs|IS||
+44|vision|The ship flying left to right|IS||
+45|vision|Clown statue under a row of praying mantises|IS||
+46|vision|The spiral prison hole|IS||
+47|vision|The Earth explodes as the ships leave|IS||
 48|machine|Arcade elevation, half rendered|U||Architectural drawing. Its link to the production is not documented in the source.
-49|vision|Cathedral-city in blue, with owl façade|IS||
+49|vision|The Harkonnen castle, figures in a window|IS||
 50|giger|Horned figure, airbrush (archive photograph)|G?||
 51|relic|Set note on tracing paper: "partie construite… pour cadre 5"|P||One of a run of photographs of loose production drawings on a table.
 52|relic|Tracing-paper frame: two figures on a dune|P||
 53|relic|Tracing-paper frames spread on a table|P||
-54|vision|Giant spheres roll off the cliff|IS||
+54|vision|Ornithopter coming out of caves on a cliff|IS||
 55|relic|Plan drawing of a red vehicle|P||
 56|machine|Leto's car, a transparency held to the light|F||
 57|giger|Harkonnen castle, full-height drawing (archive photograph)|G||
-58|vision|Battlefield of towers in pink|IS||
-59|vision|Paul, with ships at his shoulder (detail)|IS|paul|
-60|vision|The worm takes a harvester|IS||
-61|vision|Guards and musicians in the red court|IS||
-62|vision|Strongmen, acrobats and an elephant|IS||
-63|vision|The robot orchestra|IS||
+58|vision|The revolt against the machines|IS||The screenplay has two pictures of this scene; which one this is cannot be told from the transcription.
+59|vision|A ship before the barrier of the galaxy (detail)|IS||A detail of plate 351.
+60|vision|Sandworm near the harvester|IS||
+61|vision|The party guests, dogs and musicians|IS||Matched to the screenplay's party scene by its contents. The match is likely, not certain.
+62|vision|Esmer Tuek wrestling a hippo, with dancers and jugglers|IS||
+63|vision|The spice searchers' ballroom|IS||
 64|machine|Vessel, frontal elevation, pencil|F||
-65|vision|The white bull in the stone hall|IS||
+65|vision|The Baron in his gondola, Wanda tortured, Feyd watching, Yueh with a bow|IS|baron,feyd,yueh|
 66|machine|Warship, ink|F||
-67|vision|A woman lies before the dome-vehicle|IS||
+67|vision|Jessica on Leto's body; Paul in the tent|IS|jessica,leto,paul|
 68|script|"An enormous fleet of space war-ships is approaching Dune"|J||
 69|machine|Domed machine on a pedestal, pencil|F||
 70|design|Enthroned figure in blue with sceptre|M?|emperor|Identification as the Emperor is an attribution.
 71|board|Sequence 3, frames 21 on|SB||
 72|machine|Leto's car, pencil study|F||
 73|machine|A city of pods grown on a tree|U||
-74|vision|Hall of hanging banners|IS||
+74|vision|The Emperor's upside-down room|IS|emperor|
 75|machine|Three-wheeled vehicle, pencil study|F||
 76|machine|Castle on the shore, ink|F?||
 77|frame|He passes his weapon from his right hand to his left|SB||
@@ -181,7 +181,7 @@ ROWS = r"""
 153|frame|Stilgar shocks the worm with an electric prod|SB||
 154|frame|"…riding the worm"|SB||
 155|board|Sequence 56: riding the worm|SB||
-156|vision|A mountain of idols|IS||
+156|vision|The Harkonnen parade chariot|IS|baron|Matched to the screenplay's parade by its contents. The match is likely, not certain.
 157|board|Sequences 58–59. Stilgar: "We welcome you, Muad'Dib."|SB|paul|
 158|machine|Dazzle-painted hull|F||
 159|giger|Harkonnen castle, the dome|G||
@@ -218,7 +218,7 @@ ROWS = r"""
 190|frame|"…passes at high speed"|SB||
 191|design|Duncan Idaho; Gurney Halleck, captioned|M|duncan,gurney|"Duncan Idaho, maître d'armes, serviteur et ami du Duc Leto." "Gurney Halleck, guerrier et troubadour, ami du Duc Leto."
 192|script|Scene 1: "A space-ship is crossing the galaxy"|J||
-193|vision|The almond ship among stars|IS||
+193|vision|Side view of the galaxy|IS||
 194|design|Paul levitating in lotus, pencil|U|paul|
 195|design|Sardaukar in red|M?|sardaukar|
 196|machine|Ornithopter with insect wings, colour study|U||
@@ -299,7 +299,7 @@ ROWS = r"""
 271|script|Scene 116: the water of life|J|jessica,mother|
 272|script|Scene 125: rocks near the large flat land|J|paul|
 273|script|Scene 132: cave for the great ceremony|J|paul,jessica|
-274|script|Scene 134: the centre of the cisterns|J|paul,jessica|
+274|script|Scene 134: the centre of the universe|J|paul,jessica|
 275|design|Figure in a feathered sunburst collar|U|court|
 276|relic|French poster: Alexandro Jodorowsky, DUNE, Michel Seydoux|P||
 277|design|Sardaukar in dark armour|M|sardaukar|
@@ -356,27 +356,27 @@ ROWS = r"""
 328|design|Duncan Idaho with a companion|M|duncan|Named as in the captioned plate 191.
 329|giger|The worm|G||
 330|giger|The worm|G||
-331|vision|DUNE, title panel|IS||
+331|vision|DUNE title card, with two people walking away|IS||
 332|design|Emperor of the Galaxy|IS|emperor|
 333|design|Baron Harkonnen|IS|baron|
 334|design|Paul, young and adult|IS|paul|
 335|design|Bene Gesserit Mother|IS|mother|
 336|design|Sardaukar|IS|sardaukar|
-337|vision|The amphitheatre pit|IS||
-338|vision|The green tent-palace and its stair|IS||
-339|vision|Hall of hanging banners|IS||
-340|vision|A sun-machine burning in magenta|IS||
-341|vision|Cathedral-city in blue, with owl façade|IS||
-342|vision|Battlefield of towers in pink|IS||
-343|vision|Giant spheres roll off the cliff|IS||
-344|vision|The worm takes a harvester|IS||
-345|vision|A woman lies before the dome-vehicle|IS||
+337|vision|The spiral prison hole|IS||
+338|vision|Clown statue under a row of praying mantises|IS||
+339|vision|The Emperor's upside-down room|IS|emperor|
+340|vision|The Earth explodes as the ships leave|IS||
+341|vision|The Harkonnen castle, figures in a window|IS||
+342|vision|The revolt against the machines|IS||The screenplay has two pictures of this scene; which one this is cannot be told from the transcription.
+343|vision|Ornithopter coming out of caves on a cliff|IS||
+344|vision|Sandworm near the harvester|IS||
+345|vision|Jessica on Leto's body; Paul in the tent|IS|jessica,leto,paul|
 346|giger|Causeway to the castle|G||
 347|giger|Sketch sheet, "Schloss Harkonnen": the star wheel|G||
 348|giger|Sketch sheet, "Schloss Harkonnen": the folding blade|G||
 349|giger|Sketch sheet: dome, drawbridge and notes|G||
 350|giger|Sketch sheet: wings and spires|G||
-351|vision|The fish-boat|IS||
+351|vision|A ship before the barrier of the galaxy|IS||Matched to the screenplay's galaxy barrier by its contents. The match is likely, not certain.
 352|apoc|Ornithopter, pencil, signed R. Cobb|U||Signed by Ron Cobb. Likely from a later Dune production.
 353|design|The Emperor|M|emperor|Identification follows the chart in plate 303.
 354|design|Gurney Halleck|M|gurney|Identification follows the chart in plate 303.
@@ -428,7 +428,7 @@ ROWS = r"""
 400|board|Duel frames, strip|SB|paul|
 401|color|Colour storyboard: the opening|U||
 402|color|Colour storyboard: the pirates|U||
-403|script|Scene 51: a town in the desert|J|duncan|
+403|script|Scene 53: a town in the desert|J|duncan|
 404|script|"You are the holy child of the legend"|J|paul,jessica,leto|
 405|relic|Documentary still: "I have Moebius who was a genius. He was very quick!"|P||
 406|design|Thufir Hawat|M|hawat|
@@ -632,3 +632,49 @@ SAME = [
     [370, 328], [138, 93], [263, 270], [271, 264], [89, 80], [92, 141],
     [110, 137], [346, 150], [165, 140], [236, 286],
 ]
+
+# ---- The early draft of the screenplay (text transcription) ----
+# Illustration markers in the transcription, matched to plates in the archive.
+# (plate, True) is a confident match; (plate, False) is a likely one.
+ILLUS = {
+    "Side view of galaxy": (193, True),
+    "Ship flying left to right": (44, True),
+    "Dog-Beings in vehicle": (39, True),
+    "Dog-Beings walking into building": (7, True),
+    "Dog-Beings see crucifix": (41, True),
+    "Dog-Beings at the foot of the crucifix": (17, True),
+    "Dogmen watching projection": (42, True),
+    "Exploding Earth with ships leaving": (47, True),
+    "Men fighting the white blobs": (43, True),
+    "Space-ship unable to pass Galaxy barrier": (351, False),
+    "Humans in a room with computers behind them": (10, True),
+    "Man fighting machines": (58, False),
+    "Dune title card, with two people walking away": (18, True),
+    "The spiral prison hole": (46, True),
+    "Clown statue under row of praying mantis": (45, True),
+    "Emperor's upside-down room": (74, True),
+    "The Harkonnen Castle, figures in a window": (49, True),
+    "Baron in gondola, Wanda tortured, Feyd watching, Yueh with bow": (65, True),
+    "Ornithopter coming out of caves on a cliff": (54, True),
+    "Ornithopter flying over a harvester and spotters": (180, True),
+    "Sandworm near the harvester": (60, True),
+    "The party guests, dogs, musicians, food etc": (61, False),
+    "The spice searchers' ballroom, dancing, drinking, musicians": (63, True),
+    "Esmer Tuek wresting a hippo, dancers and jugglers": (62, True),
+    "The Harkonnen parade chariot, with the Baron sat on top": (156, False),
+    "Jessica on top of Leto's body parts. Paul in the tent.": (67, True),
+    # character plates at the front of the screenplay
+    "Emperor of the Galaxy": (332, True), "Baron Harkonnen": (333, True),
+    "Peter": (183, True), "Feyd Rautha": (183, True), "Rabban the Beast": (302, True),
+    "Leto": (288, True), "Paul (young) (adult)": (334, True),
+    "Bene Guesserit Mother": (335, True), "Jessica": (267, True),
+    "Thufir Hawatt": (315, True), "Duncan Idaho - Gurney Halleck": (191, True),
+    "Yueh": (316, True), "Sardaukar": (336, True),
+}
+# Photographed script pages in the archive, and the scene each one shows.
+SCRIPT_PAGES = {192: 1, 263: 115, 270: 115, 264: 116, 271: 116, 265: 117, 269: 67,
+                272: 125, 273: 132, 274: 134, 403: 53, 68: 141, 312: 43, 404: 51}
+# Roughly which scenes of the early draft each reel of the storyboard covers.
+REEL_SCENES = {"one-shot": (1, 19), "gold": (20, 31), "caladan": (32, 38), "giedi": (39, 42),
+               "training": (43, 43), "arrakis": (44, 89), "desert": (90, 115),
+               "water": (116, 136), "war": (137, 150), "fin": (151, 154)}

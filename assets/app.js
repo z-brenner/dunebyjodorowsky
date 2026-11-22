@@ -17,7 +17,7 @@
     { id: "machines", name: "The Machines", line: "Ships, cars and palaces by Chris Foss", pic: 171, rooms: ["machine"] },
     { id: "giedi", name: "Giedi Prime", line: "The Harkonnen world of H.R. Giger", pic: 440, rooms: ["giger"] },
     { id: "visions", name: "The Visions", line: "Colour plates from an illustrated screenplay", pic: 49, rooms: ["vision"] },
-    { id: "word", name: "The Word", line: "Pages of the script", pic: 312, rooms: ["script"] },
+    { id: "word", name: "The Word", line: "The early draft of the script, complete", pic: 312, rooms: ["script"] },
     { id: "alchemist", name: "The Alchemist", line: "Jodorowsky's tarot notebooks", pic: 426, rooms: ["tarot"] },
     { id: "relic", name: "The Relic", line: "The book as an object, and what came after", pic: 96, rooms: ["relic", "apoc"] },
     { id: "atlas", name: "The Atlas", line: "All 448 plates, searchable", pic: 162, rooms: [] }
@@ -25,6 +25,19 @@
   var ROOM_OF = {};
   ROOMS.forEach(function (r) { r.rooms.forEach(function (k) { ROOM_OF[k] = r; }); });
   var KIND = { board: "Storyboard sheet", frame: "Storyboard frame", color: "Colour storyboard", design: "Costume design", lineup: "Cast sheet", machine: "Machine", giger: "Giger", vision: "Colour plate", script: "Script", tarot: "Notebook", relic: "The book", apoc: "From elsewhere" };
+
+  /* the early draft of the screenplay */
+  var SC = window.DUNE_SCRIPT || { scenes: [], pages: {}, reels: {} };
+  var SCENE_OF = {}, SLOTS = 0, FILLED = 0;
+  SC.scenes.forEach(function (sc) { sc.b.forEach(function (b) { if (b[0] === "i") { SLOTS++; if (b[3] !== null) { FILLED++; if (SCENE_OF[b[3]] === undefined) SCENE_OF[b[3]] = sc.n; } } }); });
+  Object.keys(SC.pages).forEach(function (k) { SCENE_OF[k] = SC.pages[k]; });
+  P.forEach(function (p) { if (SCENE_OF[p.i] === undefined && p.var) p.var.forEach(function (v) { if (SCENE_OF[v] !== undefined && SCENE_OF[p.i] === undefined) SCENE_OF[p.i] = SCENE_OF[v]; }); });
+  var SPEAKS = { paul: ["PAUL", "VOICE OF PAUL"], jessica: ["JESSICA", "VOICE OF JESSICA"], leto: ["LETO", "DUKE LETO", "THE DUKE"], duncan: ["IDAHO", "DUNCAN"], gurney: ["HALLECK"], hawat: ["HAWATT", "THUFIR"], yueh: ["YUEH", "VOICE OF YUEH"], baron: ["VLADIMIR", "THE BARON", "BARON"], feyd: ["RAUTHA", "FEYD"], rabban: ["RABBAN", "RABBAN THE BEAST"], piter: ["PETER"], emperor: ["THE EMPEROR", "EMPEROR"], irulan: ["PRINCESS IRULAN"], mother: ["THE REVEREND MOTHER", "REVEREND MOTHER"], kynes: ["KYNES", "THE YOUNG KYNES", "THE OLD KYNES"] };
+  var LINES = {};
+  SC.scenes.forEach(function (sc) { sc.b.forEach(function (b) {
+    if (b[0] !== "d") return; var name = b[1].replace(/\s*\(.*$/, "");
+    Object.keys(SPEAKS).forEach(function (id) { if (SPEAKS[id].indexOf(name) >= 0) { LINES[id] = LINES[id] || { n: 0, first: sc.n }; LINES[id].n++; } });
+  }); });
 
   var uniq = function (ids) { return ids.filter(function (i) { return P[i].dup === undefined; }); };
   var inRoom = function (kinds) { return P.filter(function (p) { return kinds.indexOf(p.room) >= 0; }).map(function (p) { return p.i; }); };
@@ -106,14 +119,15 @@
     var total = D.reels.reduce(function (a, r) { return a + r.items.length; }, 0);
     var reels = D.reels.map(function (r, n) {
       return '<section class="reel" id="reel-' + r.id + '"><div class="reel-info"><span class="label">Reel ' + (n + 1) + " · " + esc(r.span) + "</span><h2>" + esc(r.title) + "</h2><p>" + esc(r.text) +
-        '</p><button type="button" class="btn" data-act="project" data-reel="' + n + '">Project from here</button></div><div class="strip" data-ctx tabindex="0" aria-label="' + esc(r.title) + ' frames">' +
+        '</p><button type="button" class="btn" data-act="project" data-reel="' + n + '">Project from here</button>' +
+        (SC.reels[r.id] ? '<a class="reel-read" href="#scene-' + SC.reels[r.id][0] + '">Early draft: ' + (SC.reels[r.id][0] === SC.reels[r.id][1] ? "scene " + SC.reels[r.id][0] : "scenes " + SC.reels[r.id][0] + "–" + SC.reels[r.id][1]) + "</a>" : "") + '</div><div class="strip" data-ctx tabindex="0" aria-label="' + esc(r.title) + ' frames">' +
         r.items.map(function (i) { return cell(i, true); }).join("") + "</div></section>";
     }).join("");
     var loose = '<section class="reel" id="reel-loose"><div class="reel-info"><span class="label">Unplaced</span><h2>Loose leaves</h2><p>Frames and colour sheets with no sequence number and no caption that says where they belong.</p></div><div class="strip" data-ctx tabindex="0" aria-label="Unplaced frames">' +
       D.loose.map(function (i) { return cell(i, false); }).join("") + "</div></section>";
     return '<div class="screening">' + head(room, [
       "Moebius drew the film shot by shot, about 3,000 drawings, each with a line of direction typed beneath it in French and English. Every sheet carries a sequence number in its corner.",
-      "Those numbers put the surviving sheets back in order here. Loose frames with no number are placed by what their captions describe, and say so."
+      "Those numbers put the surviving sheets back in order here. Loose frames with no number are placed by what their captions describe, and say so. Each reel links to the matching scenes of the early draft of the script, which tells the story a little differently."
     ]) + '<div class="gut" style="padding-bottom:26px"><div style="max-width:1400px;margin:0 auto"><button type="button" class="btn solid" data-act="project">Run the projector · ' + total + " plates</button></div></div>" +
       '<div class="gut"><div class="seqmap" aria-label="Sequences present in the archive">' + map + '</div><p class="seq-note">Gold squares are sequences with at least one sheet in the archive: ' + Object.keys(firstOf).length + " of the first " + max + ". The rest are missing from this file.</p></div>" +
       reels + loose + foot(room) + "</div>";
@@ -131,6 +145,7 @@
           '<div class="castline"><span class="label">Casting</span><span class="typed" style="color:var(--paper-dim)">not recorded in this archive</span></div>';
         return '<article class="player" id="who-' + c.id + '" data-ctx><div class="arcana">' + plateLink(FACE[c.id], img(FACE[c.id]), P[FACE[c.id]].w > P[FACE[c.id]].h ? "wide-src" : "") + "<b>" + esc(c.name) + '</b></div><div class="dossier"><h3>' + esc(c.name) + "</h3>" +
           (c.epithet ? '<p class="epi">' + esc(c.epithet) + "</p>" : "") + cast + (c.note ? '<p class="note">' + esc(c.note) + "</p>" : "") +
+          (LINES[c.id] ? '<p class="spoken typed">Speaks ' + LINES[c.id].n + (LINES[c.id].n === 1 ? " time" : " times") + ' in the early draft. <a href="#scene-' + LINES[c.id].first + '">First line in scene ' + LINES[c.id].first + "</a></p>" : "") +
           '<span class="label">' + all.length + " plates</span><div class=\"minis\">" + all.map(function (i) { return plateLink(i, thumb(i)); }).join("") + "</div></div></article>";
       }).join("") + "</section>";
     }).join("");
@@ -180,25 +195,70 @@
   }
   function visions() {
     var room = ROOMS[4], ids = uniq(inRoom(["vision"]));
+    ids.sort(function (x, y) { return (SCENE_OF[x] === undefined ? 999 : SCENE_OF[x]) - (SCENE_OF[y] === undefined ? 999 : SCENE_OF[y]) || x - y; });
+    var figs = ids.map(function (i) {
+      var sc = SCENE_OF[i];
+      return "<figure>" + plateLink(i, img(i)) + "<figcaption><b>" + (i + 1) + "</b><span>" + esc(P[i].t) + (sc !== undefined ? ' · <a href="#scene-' + sc + '">scene ' + sc + "</a>" : "") + "</span></figcaption></figure>";
+    }).join("");
     return '<div class="visions" id="visions">' + head(room, [
-      "These coloured-pencil scenes come from an illustrated edition of the screenplay. Photographs of that edition are in the Word room. The source does not credit the artist.",
-      "They show the film Jodorowsky wrote more than the one Herbert did: dog-headed guards, a robot orchestra, a white bull, a mountain of idols."
-    ]) + '<section class="sect gut">' + wall(ids) + "</section>" + foot(room) + "</div>";
+      "These coloured-pencil pictures come from an illustrated typescript of the early screenplay. That typescript had " + SLOTS + " pictures. " + ids.length + " of them are in this archive.",
+      "They are hung here in script order and named as the screenplay names them. Each links to its scene in the Word room, where it sits in the text. The source does not credit the artist."
+    ]) + '<section class="sect gut"><div class="wall" data-ctx>' + figs + "</div></section>" + foot(room) + "</div>";
+  }
+  function sceneHtml(sc) {
+    var out = "", dlg = false;
+    sc.b.forEach(function (b) {
+      if (b[0] === "a") out += "<p>" + esc(b[1]) + "</p>";
+      else if (b[0] === "d") out += '<p class="dlg"><b>' + esc(b[1]) + " :</b><span>" + esc(b[2]) + "</span></p>";
+      else if (b[0] === "t") out += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
+      else if (b[0] === "p") out += '<span class="pg" title="Page ' + b[1] + ' of the typescript">p. ' + b[1] + "</span>";
+      else if (b[0] === "i") {
+        var cap = "Illustration" + (b[2] ? " " + b[2] : "") + " · " + esc(b[1]);
+        out += b[3] !== null ? '<figure class="ill">' + plateLink(b[3], img(b[3])) + "<figcaption>" + cap + " · plate " + (b[3] + 1) + (b[4] ? "" : " · likely match") + "</figcaption></figure>" :
+          '<div class="ill none"><span>Picture not in the archive</span><p>' + cap + "</p></div>";
+      }
+    });
+    return '<article class="scene" id="sc-' + sc.n + '" data-n="' + sc.n + '"><header><b>' + (sc.n || "") + "</b>" + (sc.h ? "<h2>" + esc(sc.h) + "</h2>" : "") + "</header>" + out + "</article>";
   }
   function word() {
     var room = ROOMS[5], ids = uniq(inRoom(["script"]));
-    var sheet = function (i, sc, body) { return '<article class="sheet">' + (sc ? '<p class="sc">' + sc + "</p>" : "") + body + '<a href="#plate-' + (i + 1) + '" data-i="' + i + '" class="pl">Read the page · plate ' + (i + 1) + "</a></article>"; };
-    var typed = '<div class="sheets gut" data-ctx>' +
-      sheet(192, "1", "<p>A space-ship is crossing the galaxy</p>") +
-      sheet(312, "", '<p><span class="who">PAUL :</span> I have something to tell you, but I can’t...</p><p><span class="who">LETO :</span> I know. Dune is a deadly trap.</p><p><span class="who">PAUL :</span> Then why are we going ?</p>') +
-      sheet(404, "", "<p>An old woman comes up, and kisses the hem of Paul’s cape.</p><p><span class=\"who\">THE OLD WOMAN :</span> You are the holy child of the legend, son of a Bene Guesserit ! You will take us out of this hell !</p><p>One by one, the beggars kiss Jessica’s and Paul’s clothes. Paul is embarrassed.</p>") +
-      sheet(263, "115 (continued)", '<p><span class="who">THE OLD KYNES :</span> The excrement of the large worm, and the sperm of its larvae : excrement and seed in mother-water...</p><p>A blue sphere begins to emerge from the sand, becoming enormous... It lifts the old man, envelopes him and tears him into its centre. The sphere explodes in a noise of thunder. A large part of the desert becomes covered in a blue substance, the spice, vibrating and whistling.</p><p>Pardot Kynes, with his arms in a cross, half buried in spice, is lying dead. A spice flower is growing from his open mouth.</p>') +
-      sheet(68, "EXTERIOR. INTERPLANETARY SPACE.<br>VIEW FROM THE PLANET DUNE.", "<p>An enormous fleet of space war-ships is approaching Dune threateningly.</p><p>These ships, bearing the Emperor’s emblem, look sinister. They are completely covered with claws, spikes and teeth.</p>") +
-      "</div>";
+    if (!SC.scenes.length) return '<div class="word">' + head(room, ["The script could not be loaded."]) + wall(ids) + foot(room) + "</div>";
+    var toc = SC.scenes.map(function (sc) {
+      var first = ""; for (var k = 0; k < sc.b.length && !first; k++) if (sc.b[k][0] === "a") first = sc.b[k][1];
+      var label = sc.h || first.slice(0, 54) + (first.length > 54 ? "…" : "");
+      return '<li data-n="' + sc.n + '"><a href="#scene-' + sc.n + '"><b>' + (sc.n || "·") + "</b><span>" + esc(label) + "</span></a></li>";
+    }).join("");
     return '<div class="word">' + head(room, [
-      "The screenplay is by Jodorowsky, adapted from Herbert, with English dialogue credited on the title page to Michel Demuth. Only a handful of its pages are in this archive.",
-      "Five passages are typed out below exactly as they appear on the page, spelling included. The photographed pages follow."
-    ]) + typed + '<section class="sect gut"><h2>The pages</h2><p class="sub">Typescript pages, and photographs of the illustrated edition.</p>' + wall(ids) + "</section>" + foot(room) + "</div>";
+      "The early draft of the screenplay, complete: " + (SC.scenes.length - 1) + " numbered scenes by Jodorowsky, adapted from Herbert. The text is a transcription of an illustrated typescript, kept as typed, spelling included.",
+      "Where the typescript had a picture, the slot is kept. " + FILLED + " of the " + SLOTS + " slots are filled from the image archive. The draft frames the film as a projection watched by dog-beings in a Museum of Man. The storyboard sheets in this archive open differently, on a long move through the galaxy."
+    ]) + '<div class="reader gut"><nav class="toc" aria-label="Scenes"><div class="toc-tools"><input type="search" id="script-q" placeholder="Search the script" aria-label="Search the script"><output id="script-n">' + (SC.scenes.length - 1) + ' scenes</output></div><ol id="toc">' + toc + "</ol></nav>" +
+      '<div class="script typed" id="script" data-ctx>' + SC.scenes.map(sceneHtml).join("") + '<p class="end">END</p></div></div>' +
+      '<section class="sect gut"><h2>Pages in the archive</h2><p class="sub">Photographs of typescript pages and of the illustrated edition. Open one to jump to its scene.</p>' + wall(ids) + "</section>" +
+      '<section class="sect gut"><p class="sub">Text source: “Jodorowsky’s Dune Early Draft – Text”, a transcription hosted on the Internet Archive. Scene 101 is absent from it, and one page is headed “85 (continued)” with no scene 85 before it; both are left as found.</p></section>' + foot(room) + "</div>";
+  }
+  function wordReady() {
+    var q = $("#script-q"), toc = $("#toc"), box = $("#script"); if (!q) return;
+    var scenes = $$(".scene", box), items = $$("li", toc), text = scenes.map(function (el) { return el.textContent.toLowerCase(); }), t = 0;
+    var apply = function () {
+      var words = q.value.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; }), n = 0, ranges = [];
+      scenes.forEach(function (el, i) {
+        var ok = words.every(function (w) { return text[i].indexOf(w) >= 0; });
+        el.hidden = !ok; items[i].hidden = !ok; if (ok && i) n++;
+        if (ok && words.length && window.Highlight && ranges.length < 4000) {
+          var tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), node;
+          while ((node = tw.nextNode())) { var low = node.data.toLowerCase(); words.forEach(function (w) { var at = -1; while ((at = low.indexOf(w, at + 1)) >= 0) { var r = new Range(); r.setStart(node, at); r.setEnd(node, at + w.length); ranges.push(r); } }); }
+        }
+      });
+      if (window.Highlight && CSS.highlights) { if (ranges.length) { var hl = new Highlight(); ranges.forEach(function (r) { hl.add(r); }); CSS.highlights.set("hit", hl); } else CSS.highlights.delete("hit"); }
+      $("#script-n").textContent = n + (n === 1 ? " scene" : " scenes");
+    };
+    q.addEventListener("input", function () { clearTimeout(t); t = setTimeout(apply, 180); });
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (!e.isIntersecting) return; var li = items[scenes.indexOf(e.target)]; $$("li.on", toc).forEach(function (x) { x.classList.remove("on"); }); li.classList.add("on"); if (toc.scrollHeight > toc.clientHeight) toc.scrollTop = li.offsetTop - toc.clientHeight / 2; });
+      }, { rootMargin: "-20% 0px -70% 0px" });
+      scenes.forEach(function (el) { io.observe(el); });
+    }
   }
   function alchemist() {
     var room = ROOMS[6], ids = uniq(inRoom(["tarot"]));
@@ -242,7 +302,7 @@
   function atlasReady() {
     var grid = $("#grid"); if (!grid) return;
     var kind = "", q = $("#atlas-q"), dup = $("#atlas-dup"), items = $$(".pl", grid);
-    var text = P.map(function (p) { return ((p.i + 1) + " " + p.t + " " + (D.credits[p.c] || "") + " " + (p.n || "") + " " + (p.who || []).join(" ") + " " + (p.seq ? "sequence " + p.seq.join(" sequence ") : "") + " " + (p.cap ? p.cap.join(" ") : "") + " " + KIND[p.room]).toLowerCase(); });
+    var text = P.map(function (p) { return ((p.i + 1) + " " + p.t + " " + (D.credits[p.c] || "") + " " + (p.n || "") + " " + (p.who || []).join(" ") + " " + (p.seq ? "sequence " + p.seq.join(" sequence ") : "") + " " + (p.cap ? p.cap.join(" ") : "") + " " + KIND[p.room] + (SCENE_OF[p.i] !== undefined ? " scene " + SCENE_OF[p.i] : "")).toLowerCase(); });
     var apply = function () {
       var words = q.value.toLowerCase().split(/\s+/).filter(Boolean), n = 0;
       items.forEach(function (el, i) {
@@ -274,6 +334,7 @@
     row("Credit", esc(D.credits[p.c] || ""));
     if (p.seq) row("Sequence", p.seq.join(" and ") + ' · <a href="#screening">see it in order</a>');
     if (p.cap) row("Typed beneath the frame", '<span class="capen">' + esc(p.cap[1]) + '</span><br><span class="capfr">' + esc(p.cap[0]) + "</span>");
+    if (SCENE_OF[i] !== undefined) row("In the script", '<a href="#scene-' + SCENE_OF[i] + '">Read scene ' + SCENE_OF[i] + " of the early draft</a>");
     if (p.n) row("Note", linkPlates(p.n));
     if (p.who) row("Shows", p.who.map(function (w) { var n = ""; D.players.forEach(function (h) { h.people.forEach(function (c) { if (c.id === w) n = c.name; }); }); return '<a href="#players" data-who="' + w + '">' + esc(n) + "</a>"; }).join(", "));
     if (p.var) row(p.dup !== undefined ? "Repeat scan. Other copies" : "Other scans of this picture", '<span class="minis">' + p.var.map(function (v) { return plateLink(v, thumb(v)); }).join("") + "</span>");
@@ -396,6 +457,13 @@
       showPlate(i); return;
     }
     if (!loupe.hidden) closeLoupe();
+    var sm = /^scene-(\d+)$/.exec(hsh);
+    if (sm) {
+      if (rendered !== "word") render("word");
+      var target = $("#sc-" + sm[1]), sq = $("#script-q");
+      if (target && target.hidden && sq) { sq.value = ""; sq.dispatchEvent(new Event("input")); $$(".scene", $("#script")).forEach(function (x) { x.hidden = false; }); }
+      if (target) target.scrollIntoView(); return;
+    }
     if (!VIEWS[hsh]) { if (/^(cell|reel|who)-/.test(hsh)) return; hsh = "home"; }
     if (hsh !== rendered) render(hsh);
     if (pendingWho) { var el = $("#who-" + pendingWho); pendingWho = ""; if (el) el.scrollIntoView(); }
@@ -405,7 +473,7 @@
     var r = ROOMS.filter(function (x) { return x.id === id; })[0];
     $("#here").textContent = r ? "Room " + roman[ROOMS.indexOf(r)] + " · " + r.name : "448 plates · nine rooms";
     $$("a", menu).forEach(function (a) { if (a.getAttribute("href") === "#" + id) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
-    if (id === "home") homeReady(); if (id === "atlas") atlasReady();
+    if (id === "home") homeReady(); if (id === "atlas") atlasReady(); if (id === "word") wordReady();
     if (!quiet) window.scrollTo(0, 0);
   }
   document.addEventListener("click", function (e) {
