@@ -678,3 +678,52 @@ SCRIPT_PAGES = {192: 1, 263: 115, 270: 115, 264: 116, 271: 116, 265: 117, 269: 6
 REEL_SCENES = {"one-shot": (1, 19), "gold": (20, 31), "caladan": (32, 38), "giedi": (39, 42),
                "training": (43, 43), "arrakis": (44, 89), "desert": (90, 115),
                "water": (116, 136), "war": (137, 150), "fin": (151, 154)}
+
+# ---- The story edition ----
+# Art placed against scenes of the early draft BY THIS EDITION (not by the
+# screenplay's own picture list, which is ILLUS above). Storyboard sheets are
+# placed by their sequence number and captions; designs where a character or
+# place first matters. These placements are editorial and are labelled as such.
+PLACE = {
+    1: [125, 222, 189, 190, 392, 393, 313, 365, 379, 35, 22, 171, 301],
+    20: [227, 228, 380], 22: [236, 71, 321],
+    27: [3, 12, 237, 238, 395], 28: [225, 226], 29: [239, 240, 371, 277],
+    32: [246, 247, 248], 33: [250, 197, 251, 252], 34: [437],
+    35: [253, 254, 255, 373], 36: [88, 261, 262], 37: [208], 38: [209, 210, 211, 212, 213],
+    39: [440, 159, 317, 346, 27, 28, 283, 25], 40: [139, 89, 442],
+    41: [126, 214, 215, 374, 445], 42: [16, 37, 33, 24, 355, 372, 447],
+    43: [217, 218, 20, 40, 219, 284, 400, 116, 77, 410, 406, 370, 354],
+    44: [412], 47: [266], 48: [378], 51: [84], 53: [86], 55: [127], 59: [145],
+    60: [128, 101, 94, 223, 224, 314, 330],
+    71: [111], 78: [92], 84: [110, 216], 87: [229, 230, 36, 30, 231], 89: [149],
+    92: [233], 94: [234], 105: [99], 109: [85, 157], 115: [23],
+    116: [242, 241, 244], 117: [91], 119: [235], 121: [119, 95, 382, 245],
+    125: [105, 153, 154, 155, 79, 249, 142], 126: [113],
+    132: [305, 306, 307, 308, 309, 310, 311],
+    138: [102, 106], 139: [133], 140: [117], 142: [108], 144: [166], 145: [163],
+    147: [165], 148: [135], 149: [435], 150: [130, 131, 132],
+    151: [207, 167, 168, 285, 257, 258, 259, 260], 154: [356],
+}
+# Ten chapters: (id, title, first scene, last scene, key plate, one line)
+CHAPTERS = [
+    ("museum", "The Museum of Man", 1, 19, 171, "Dog-beings land in the dead capital of the empire of Man and watch its history projected from the eyes of a crucified robot. The story of Dune is the film they are shown."),
+    ("kaitain", "The Golden Planet", 20, 31, 3, "Duke Leto drives a wagon of stolen spice into the Senate. The Emperor decides what to do about him."),
+    ("caladan", "Caladan", 32, 38, 250, "The Atreides prepare to leave. In memory: how Paul was conceived, and the test of the Reverend Mother."),
+    ("giedi", "The Harkonnens", 39, 42, 440, "A castle in the shape of its owner, and the court inside it."),
+    ("robot", "The Gymnasium", 43, 43, 219, "One long scene: Paul is trained against a fighting machine, and his father tells him where they are going."),
+    ("arrakis", "The Deadly Trap", 44, 89, 60, "Arrakeen, the worm, four parties in one palace, the betrayal, and the death of the Duke."),
+    ("desert", "The Desert", 90, 115, 234, "Jessica and Paul escape into the sand and are taken in by the Fremen."),
+    ("water", "The Water of Life", 116, 136, 235, "The ceremony in the cavern, the arena on Giedi One, the worm, and the centre of the universe."),
+    ("war", "The War", 137, 150, 245, "The Emperor comes to Dune. The Fremen come out of the desert."),
+    ("paul", "I Am Paul", 151, 154, 260, "The hall of the palace. Then the museum again, and the dogs go looking."),
+]
+# How the plates are grouped in the gallery.
+GROUPS = [
+    ("storyboard", "The storyboard", "Drawn by Moebius from Jodorowsky's shot list. Sheets from the production book, and single frames.", ["board", "frame", "color"]),
+    ("screenplay", "Pictures from the screenplay", "Colour-pencil pictures from the illustrated typescript. Artist uncredited in the source.", ["vision"]),
+    ("costumes", "Costumes", "Jean Giraud (Moebius).", ["design", "lineup"]),
+    ("machines", "Machines and places", "Chris Foss, with a few uncredited sheets.", ["machine"]),
+    ("giger", "Giedi Prime", "H.R. Giger.", ["giger"]),
+    ("pages", "Script pages", "Photographs of the typescript.", ["script"]),
+    ("other", "Everything else in the file", "The book as an object, Jodorowsky's tarot notebooks, and five items from other productions.", ["relic", "tarot", "apoc"]),
+]

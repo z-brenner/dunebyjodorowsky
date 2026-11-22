@@ -1,63 +1,59 @@
 # Jodorowsky's Dune Bible
 
-An interactive reading of the production book for the *Dune* that Alejandro Jodorowsky prepared in the mid-1970s and never shot.
-
-The source is a 448-page, image-only PDF: a scrapbook of storyboard sheets, costume plates, paintings, script pages and photographs of the book. This site takes it apart and puts it back together so it can be explored.
-
-## What is in it
+A reading edition of the *Dune* that Alejandro Jodorowsky prepared in the mid-1970s and never shot: the early draft of the screenplay, told scene by scene, with the surviving drawings and paintings beside it.
 
 Open `index.html` in a browser. There is no build step and no server.
 
-| Room | What it holds |
-| --- | --- |
-| **The Screening** | The storyboard in running order, as ten reels. A projector plays it with the typed French and English captions as subtitles, and ends the way the storyboard does: the whole screen goes blue. |
-| **The Players** | Moebius's costume designs grouped by house, with the casting Jodorowsky wanted. |
-| **The Machines** | Chris Foss's ships, cars and palaces. |
-| **Giedi Prime** | H.R. Giger's Harkonnen castle, sketch sheets and furniture. |
-| **The Visions** | Colour-pencil plates from an illustrated typescript of the screenplay, in script order. |
-| **The Word** | The complete early draft of the screenplay (153 numbered scenes) as a reader, with a scene list, search, and the archive's pictures set into the text where the typescript had them. |
-| **The Alchemist** | Jodorowsky's tarot notebooks, which travelled in the same file. |
-| **The Relic** | The book as an object, and what its makers did next. |
-| **The Atlas** | All 448 plates in file order, with filters and search. |
+## What is in it
 
-Every plate opens in a viewer with zoom, its credit, any caption typed beneath it, its sequence number, and other scans of the same picture. **Draw a plate** in the top bar picks one at random.
+- **The Film.** All 153 numbered scenes of the early draft, in ten chapters. Each scene has its text on the left and its art on the right, every picture in the same plate format. A strip at the top of each chapter shows which scenes have art.
+- **The Art.** All 448 plates from the image file, grouped: storyboard, pictures from the screenplay, costumes, machines, Giedi Prime, script pages, everything else.
+- **The plate viewer.** Any picture opens large, with who made it, what was done to it, where it sits in the story and why, and a button to see the untouched scan.
 
 Plate numbers match the page numbers of the source PDF.
 
-The script is cross-linked: colour plates and photographed script pages link to their scene, each storyboard reel links to the matching scenes of the draft, and each character shows how often they speak and where they first do.
+## What was done to the pictures
 
-## How the film order was worked out
+The source is a 448-page PDF of scans collected online, mostly small. `tools/restore.py` makes a restored copy of each unique picture in `art/`. The originals in `plates/` are never changed.
 
-Each storyboard sheet in the book carries a sequence number in its top-right corner ("12 DUNE"). Those numbers place 36 of the first 90 sequences. Loose frames with no number are placed by what their captions describe, and are labelled "placed by caption". Frames that could not be placed are kept in a "loose leaves" strip at the end.
+- **Lighting evened** on storyboard sheets and cast sheets, so grey photographed paper becomes white.
+- **Straightened**, for storyboard sheets photographed at an angle. The frames' own ruled edges are used to undo the tilt. A result is kept only if the frames measurably got squarer; flat scans are left alone. This is conservative, so some tilted sheets are not corrected.
+- **Upscaled 4×** with Real-ESRGAN (`realesr-general-x4v3`), blended with a plain resize so the scan's own texture is not lost, then capped at 2,200 px on the long side.
 
-## What is uncertain
+Upscaling invents detail. The fine texture in a restored plate was produced by a model guessing from a small scan. Tiny typed captions do not become readable. Restored plates are labelled as restored everywhere they appear.
 
-- The file is not a complete copy of the book. Most sequences are missing.
-- 77 plates are repeat scans of a picture that appears elsewhere in the file. The rooms show one copy; the Atlas keeps all of them.
-- Several costume identifications follow a fan-made chart included in the file (plate 304). Captions inside the archive disagree about Duncan Idaho's costume. Plates say which caption they follow.
-- Casting marked *reported* is repeated in accounts of the production but is not confirmed by anything in the archive.
-- Five items appear to come from other Dune productions and are kept apart in the Relic room.
-- The early draft and the storyboard are different versions of the film. The scene ranges linked from each reel are approximate.
-- The typescript had 76 pictures. 39 slots are filled from the archive; four of those matches are marked "likely" because they were made by content, not by a caption. The other slots are shown empty.
+## What is original and what is this edition's
+
+- **Words inside scenes:** the screenplay as transcribed, unaltered.
+- **Chapter titles and one-line chapter descriptions:** this edition's.
+- **Pictures placed by the screenplay:** 39 pictures matched to the typescript's own list of illustrations. Four of these matches were made by content and are labelled "likely".
+- **Pictures placed by this edition:** everything else, including all the storyboard, placed from sequence numbers and captions (`PLACE` in `tools/catalog.py`). The storyboard is a later version of the film than this draft, so the fit is loose.
+- **Gaps:** nothing was drawn or generated to fill scenes with no art. Those scenes are told by the script alone and say so. Pictures the typescript had but the archive lacks are listed by name.
+
+## Other things that are uncertain
+
+- 77 plates are repeat scans of a picture that appears elsewhere in the file. They are not restored and are listed at the end of The Art.
+- Several costume identifications follow a fan-made chart in the file (plate 304).
+- Five items appear to come from other Dune productions.
 - The transcription has no scene 101, and one page headed "85 (continued)" with no scene 85 before it. Both are left as found.
 
-## Rebuilding from the sources
+## Rebuilding
 
 ```
 python3 tools/build.py /path/to/Jodorowskys_Dune.pdf
+python3 tools/restore.py /path/to/realesr-general-x4v3.pth
+python3 tools/build.py /path/to/Jodorowskys_Dune.pdf        # again, to pick up the restored plates
 python3 tools/build_script.py "/path/to/Jodorowskys Dune Early Draft - Text.pdf"
 ```
 
-Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`).
+Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`). `restore.py` also needs PyTorch, NumPy and OpenCV, and takes about half an hour on four CPU cores.
 
-- `build.py` writes `plates/` (the original JPEGs, untouched), `thumbs/` (sprite sheets) and `assets/data.js`.
-- `build_script.py` parses the text transcription of the early draft into scenes, dialogue, superimposed titles, page marks and illustration slots, and writes `assets/script.js`.
-- `tools/catalog.py` holds the catalogue: titles, credits, sequences, captions, reel order, and which archive plate fills which illustration slot.
+- `tools/catalog.py` is the catalogue: titles, credits, sequences, captions, chapters, and where each picture is placed.
+- `tools/sr.py` is a small runner for the upscaling model.
+- `tools/restored.json` records what was done to each plate.
 
 ## Rights
 
 The MIT licence in this repository covers the code only (`index.html`, `assets/site.css`, `assets/app.js`, `tools/`).
 
-The screenplay text in `assets/script.js` is by Alejandro Jodorowsky, from a transcription hosted on the Internet Archive ("Jodorowsky's Dune Early Draft – Text"). It is not licensed by this repository either.
-
-The images in `plates/` and `thumbs/` are the work of Jean Giraud (Moebius), Chris Foss, H.R. Giger, Alejandro Jodorowsky and others, and remain the property of the artists and their estates. They are not licensed by this repository. This is an unofficial study project.
+The screenplay text in `assets/script.js` is by Alejandro Jodorowsky, from a transcription hosted on the Internet Archive. The images in `plates/`, `art/` and `thumbs/` are the work of Jean Giraud (Moebius), Chris Foss, H.R. Giger, Alejandro Jodorowsky and others. Restoring them does not change whose they are. None of it is licensed by this repository. This is an unofficial study edition.

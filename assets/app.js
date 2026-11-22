@@ -1,511 +1,178 @@
-/* Jodorowsky's Dune Bible. One page, nine rooms, a plate viewer and a projector.
-   Plates are numbered from 1 to 448 to match the pages of the source PDF. */
+/* Jodorowsky's Dune. The early draft of the screenplay, told scene by scene with
+   the surviving art beside it. Plates keep the page numbers of the source file. */
 (function () {
   "use strict";
-  var D = window.DUNE, P = D.plates;
+  var D = window.DUNE, P = D.plates, SC = window.DUNE_SCRIPT || { scenes: [] };
   var $ = function (s, el) { return (el || document).querySelector(s); };
   var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
   var pad = function (i) { return ("00" + i).slice(-3); };
-  var src = function (i) { return "plates/" + pad(i) + ".jpg"; };
-  var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+  var roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+  var KIND = { board: "Storyboard sheet", frame: "Storyboard frame", color: "Colour storyboard", design: "Costume", lineup: "Cast sheet", machine: "Machine", giger: "Giedi Prime", vision: "Screenplay picture", script: "Script page", relic: "The book", tarot: "Notebook", apoc: "From elsewhere" };
 
-  var ROOMS = [
-    { id: "screening", name: "The Screening", line: "The storyboard, put back in running order", pic: 235, rooms: ["board", "frame", "color"] },
-    { id: "players", name: "The Players", line: "Costumes, and who was meant to wear them", pic: 371, rooms: ["design", "lineup"] },
-    { id: "machines", name: "The Machines", line: "Ships, cars and palaces by Chris Foss", pic: 171, rooms: ["machine"] },
-    { id: "giedi", name: "Giedi Prime", line: "The Harkonnen world of H.R. Giger", pic: 440, rooms: ["giger"] },
-    { id: "visions", name: "The Visions", line: "Colour plates from an illustrated screenplay", pic: 49, rooms: ["vision"] },
-    { id: "word", name: "The Word", line: "The early draft of the script, complete", pic: 312, rooms: ["script"] },
-    { id: "alchemist", name: "The Alchemist", line: "Jodorowsky's tarot notebooks", pic: 426, rooms: ["tarot"] },
-    { id: "relic", name: "The Relic", line: "The book as an object, and what came after", pic: 96, rooms: ["relic", "apoc"] },
-    { id: "atlas", name: "The Atlas", line: "All 448 plates, searchable", pic: 162, rooms: [] }
-  ];
-  var ROOM_OF = {};
-  ROOMS.forEach(function (r) { r.rooms.forEach(function (k) { ROOM_OF[k] = r; }); });
-  var KIND = { board: "Storyboard sheet", frame: "Storyboard frame", color: "Colour storyboard", design: "Costume design", lineup: "Cast sheet", machine: "Machine", giger: "Giger", vision: "Colour plate", script: "Script", tarot: "Notebook", relic: "The book", apoc: "From elsewhere" };
+  var src = function (i, original) { return P[i].r && !original ? "art/" + pad(i) + ".webp" : "plates/" + pad(i) + ".jpg"; };
+  var size = function (i) { return P[i].r ? [P[i].r[0], P[i].r[1]] : [P[i].w, P[i].h]; };
+  var state = function (i) { return P[i].r && P[i].r[2].length ? "Restored" : "Original scan"; };
+  var placing = { s: "Placed by the screenplay", l: "Placed by this edition (likely the screenplay's picture)", e: "Placed by this edition" };
 
-  /* the early draft of the screenplay */
-  var SC = window.DUNE_SCRIPT || { scenes: [], pages: {}, reels: {} };
-  var SCENE_OF = {}, SLOTS = 0, FILLED = 0;
-  SC.scenes.forEach(function (sc) { sc.b.forEach(function (b) { if (b[0] === "i") { SLOTS++; if (b[3] !== null) { FILLED++; if (SCENE_OF[b[3]] === undefined) SCENE_OF[b[3]] = sc.n; } } }); });
-  Object.keys(SC.pages).forEach(function (k) { SCENE_OF[k] = SC.pages[k]; });
-  P.forEach(function (p) { if (SCENE_OF[p.i] === undefined && p.var) p.var.forEach(function (v) { if (SCENE_OF[v] !== undefined && SCENE_OF[p.i] === undefined) SCENE_OF[p.i] = SCENE_OF[v]; }); });
-  var SPEAKS = { paul: ["PAUL", "VOICE OF PAUL"], jessica: ["JESSICA", "VOICE OF JESSICA"], leto: ["LETO", "DUKE LETO", "THE DUKE"], duncan: ["IDAHO", "DUNCAN"], gurney: ["HALLECK"], hawat: ["HAWATT", "THUFIR"], yueh: ["YUEH", "VOICE OF YUEH"], baron: ["VLADIMIR", "THE BARON", "BARON"], feyd: ["RAUTHA", "FEYD"], rabban: ["RABBAN", "RABBAN THE BEAST"], piter: ["PETER"], emperor: ["THE EMPEROR", "EMPEROR"], irulan: ["PRINCESS IRULAN"], mother: ["THE REVEREND MOTHER", "REVEREND MOTHER"], kynes: ["KYNES", "THE YOUNG KYNES", "THE OLD KYNES"] };
-  var LINES = {};
-  SC.scenes.forEach(function (sc) { sc.b.forEach(function (b) {
-    if (b[0] !== "d") return; var name = b[1].replace(/\s*\(.*$/, "");
-    Object.keys(SPEAKS).forEach(function (id) { if (SPEAKS[id].indexOf(name) >= 0) { LINES[id] = LINES[id] || { n: 0, first: sc.n }; LINES[id].n++; } });
-  }); });
+  /* which scene each plate sits in */
+  var SCENE_OF = {}, ART = {};
+  SC.scenes.forEach(function (sc) { sc.b.forEach(function (b) { if (b[0] === "i" && b[3] !== null && SCENE_OF[b[3]] === undefined) SCENE_OF[b[3]] = sc.n; }); });
+  Object.keys(D.place).forEach(function (n) { D.place[n].forEach(function (i) { if (SCENE_OF[i] === undefined) SCENE_OF[i] = +n; }); });
+  SC.scenes.forEach(function (sc) {
+    var ids = [];
+    sc.b.forEach(function (b) { if (b[0] === "i" && b[3] !== null && SCENE_OF[b[3]] === sc.n && ids.indexOf(b[3]) < 0) ids.push(b[3]); });
+    (D.place[sc.n] || []).forEach(function (i) { if (ids.indexOf(i) < 0) ids.push(i); });
+    ART[sc.n] = ids;
+  });
+  var chapterOf = function (n) { for (var k = 0; k < D.chapters.length; k++) if (n >= D.chapters[k].a && n <= D.chapters[k].b) return k; return 0; };
 
-  var uniq = function (ids) { return ids.filter(function (i) { return P[i].dup === undefined; }); };
-  var inRoom = function (kinds) { return P.filter(function (p) { return kinds.indexOf(p.room) >= 0; }).map(function (p) { return p.i; }); };
-
-  /* ---------- building blocks ---------- */
+  /* ---------- pieces ---------- */
+  function img(i, eager) {
+    var s = size(i);
+    return '<img src="' + src(i) + '" width="' + s[0] + '" height="' + s[1] + '" alt="' + esc(P[i].t) + '"' + (eager ? "" : ' loading="lazy"') + ' decoding="async">';
+  }
+  function plate(i) {
+    var p = P[i];
+    return '<figure class="plate k-' + p.room + '"><a class="pl" href="#plate-' + (i + 1) + '" data-i="' + i + '">' + img(i) + "</a><figcaption><b>" + (i + 1) + "</b><span>" + esc(p.t) +
+      "<small>" + esc(D.credits[p.c] || "") + " · " + state(i) + (p.by ? " · " + placing[p.by] : "") + "</small></span></figcaption></figure>";
+  }
   function thumb(i) {
     var p = P[i], s = p.s, sh = D.sheets[s[0]];
     var bx = sh[1] === s[3] ? 0 : s[1] / (sh[1] - s[3]) * 100, by = sh[2] === s[4] ? 0 : s[2] / (sh[2] - s[4]) * 100;
-    return '<span class="th" role="img" aria-label="' + esc(p.t) + '" style="aspect-ratio:' + s[3] + "/" + s[4] +
-      ";background-image:url(thumbs/" + sh[0] + ");background-size:" + (sh[1] / s[3] * 100) + "% " + (sh[2] / s[4] * 100) +
-      "%;background-position:" + bx + "% " + by + '%"></span>';
+    return '<a class="pl th" href="#plate-' + (i + 1) + '" data-i="' + i + '" title="' + esc((i + 1) + ". " + p.t) + '" style="aspect-ratio:' + s[3] + "/" + s[4] +
+      ";background-image:url(thumbs/" + sh[0] + ");background-size:" + (sh[1] / s[3] * 100) + "% " + (sh[2] / s[4] * 100) + "%;background-position:" + bx + "% " + by + '%"><i>' + (i + 1) + "</i></a>";
   }
-  function plateLink(i, inner, cls) { return '<a class="pl ' + (cls || "") + '" href="#plate-' + (i + 1) + '" data-i="' + i + '">' + inner + "</a>"; }
-  function img(i, eager) {
-    var p = P[i];
-    return '<img src="' + src(i) + '" width="' + p.w + '" height="' + p.h + '" alt="' + esc(p.t) + '"' + (eager ? "" : ' loading="lazy"') + ' decoding="async">';
-  }
-  function figure(i) {
-    return "<figure>" + plateLink(i, img(i)) + "<figcaption><b>" + (i + 1) + "</b><span>" + esc(P[i].t) + "</span></figcaption></figure>";
-  }
-  function wall(ids) { return '<div class="wall" data-ctx>' + ids.map(figure).join("") + "</div>"; }
-  function head(room, ledes) {
-    var n = ROOMS.indexOf(room);
-    return '<header class="room-head gut"><span class="label">Room ' + roman[n] + " of IX</span><h1>" + esc(room.name) + "</h1>" +
-      ledes.map(function (t) { return '<p class="lede">' + t + "</p>"; }).join("") + "</header>";
-  }
-  function foot(room) {
-    var n = ROOMS.indexOf(room), next = ROOMS[(n + 1) % ROOMS.length];
-    return '<footer class="room-foot gut"><a class="btn" href="#home">Back to the book</a><a class="btn solid" href="#' + next.id + '">Next room: ' + esc(next.name) + "</a></footer>";
-  }
+  var CREDITS = '<div class="credits"><span>michel seydoux presents</span><span>alexandro jodorowsky’s</span><strong>DUNE</strong><span>from frank herbert’s novel</span><span>design by jean giraud · machines by chris foss<br>special effects by dan o’bannon<br>dialogue by m. demuth and a. jodorowsky</span></div>';
 
-  /* ---------- HOME ---------- */
-  var CREDITS = '<div class="title-credits"><span>michel<br>seydoux<br>presents</span><span>alexandro<br>jodorowsky’s<strong>DUNE</strong>from frank herbert’s novel</span><span>design by jean giraud<br>machines by chris foss<br>special effects by dan o’bannon<br>dialogue by m. demuth<br>and a. jodorowsky</span></div>';
-  var bookSeen = false;
+  /* ---------- contents ---------- */
   function home() {
-    var counts = {};
-    P.forEach(function (p) { counts[p.room] = (counts[p.room] || 0) + 1; });
-    var cards = ROOMS.map(function (r, n) {
-      var c = r.id === "atlas" ? 448 : r.rooms.reduce(function (a, k) { return a + (counts[k] || 0); }, 0);
-      return '<a class="card" href="#' + r.id + '"><span class="card-num">' + roman[n] + '</span><span class="card-pic">' + img(r.pic, true) +
-        "</span><h3>" + esc(r.name) + "</h3><p>" + esc(r.line) + "</p><em>" + c + " plates</em></a>";
-    }).join("");
-    return '<section class="table gut"><div class="book-wrap"><div class="book' + (bookSeen || reduced ? " open" : "") + '" id="book">' +
-      '<div class="leaf title" aria-label="Title page">' + CREDITS + "</div>" +
-      '<div class="board" id="board" role="button" tabindex="0" aria-label="Open or close the cover">' +
-      '<div class="face cloth"><span class="stamp">DUNE</span><small>Open</small></div>' +
-      '<div class="face fly"><span class="label">The film that was never shot</span>' +
-      "<p>In the mid-1970s Alejandro Jodorowsky spent more than two years preparing a film of Frank Herbert’s <i>Dune</i>. Moebius drew every shot. Chris Foss painted the ships. H.R. Giger designed a planet. Dan O’Bannon planned the effects.</p>" +
-      "<p>The whole film was bound into a book and carried to the Hollywood studios. None of them paid for it.</p>" +
-      "<p>This is a scrapbook of that book: 448 pages of storyboards, costumes, paintings, script and photographs. Every page is here, sorted into nine rooms.</p></div>" +
-      "</div></div></div>" +
-      '<div class="under-book"><p>The storyboard has been put back in film order. You can watch it.</p><span><button type="button" class="btn solid" data-act="project">Run the projector</button></span></div></section>' +
-      '<section class="spread gut"><div class="spread-head"><h2>Nine rooms</h2><p>Pick one, or draw a plate at random from the top bar.</p></div><div class="cards">' + cards + "</div>" +
-      '<div class="colophon"><div><span class="label">What this is</span><p>An unofficial arrangement of one file: a 448-page PDF of images gathered from many places. Nothing was added to it. Plates keep the page numbers of that file, so plate 124 is page 124.</p></div>' +
-      '<div><span class="label">What it is not</span><p>It is not a complete copy of the production book. Many storyboard sequences are missing, some pages appear several times in different scans, and a few items come from other Dune projects. Those are marked.</p></div>' +
-      '<div><span class="label">Whose work it is</span><p>Drawings and paintings remain the work of Jean Giraud (Moebius), Chris Foss, H.R. Giger, Alejandro Jodorowsky and their estates. Names given as attributed are this site’s reading and may be wrong.</p></div></div></section>';
-  }
-  function homeReady() {
-    var book = $("#book"), board = $("#board");
-    if (!book) return;
-    var toggle = function () { book.classList.toggle("open"); bookSeen = true; };
-    board.addEventListener("click", toggle);
-    board.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
-    if (!bookSeen && !reduced) setTimeout(function () { if ($("#book") === book) { book.classList.add("open"); bookSeen = true; } }, 900);
+    var restored = P.filter(function (p) { return p.r && p.r[2].length; }).length, straight = P.filter(function (p) { return p.r && p.r[2].indexOf("straightened") >= 0; }).length;
+    var withArt = SC.scenes.filter(function (sc) { return sc.n && ART[sc.n].length; }).length;
+    return '<section class="hero gut"><div class="hero-text">' + CREDITS + '<p class="lede">The film Alejandro Jodorowsky prepared in the mid-1970s and never shot, told here from what survives of it: the early draft of the screenplay, and the drawings and paintings made for it.</p>' +
+      '<a class="btn solid" href="#ch-1">Begin</a></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true) + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
+      '<section class="gut"><ol class="chapters">' + D.chapters.map(function (c, k) {
+        return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3) + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
+      }).join("") + "</ol></section>" +
+      '<section class="notes gut"><h2>What you are looking at</h2><div class="notes-grid">' +
+      "<div><h3>The words</h3><p>All " + (SC.scenes.length - 1) + " scenes of the early draft, as typed. Nothing inside a scene has been rewritten or summarised. The chapter titles and their one-line descriptions are this edition’s.</p></div>" +
+      "<div><h3>The pictures</h3><p>Every picture comes from one 448-page file of scans gathered online. " + restored + " of them have been restored for this edition: uneven lighting flattened on the pencil sheets, " + straight + " photographed sheets straightened, and small scans enlarged four times by a neural upscaler.</p></div>" +
+      "<div><h3>What restoring changes</h3><p>Upscaling invents detail. The fine texture in a restored plate was made by a machine guessing from a small scan, and tiny typed captions do not become readable. Each plate says whether it is restored, and the viewer shows the untouched scan on request.</p></div>" +
+      "<div><h3>Where pictures sit</h3><p>Some pictures are placed by the screenplay’s own list of illustrations. The rest, including all the storyboard, are placed by this edition from sequence numbers and captions. Each plate says which. The storyboard is a later version of the film than this draft, so the fit is loose.</p></div>" +
+      "<div><h3>The gaps</h3><p>" + withArt + " of the " + (SC.scenes.length - 1) + " scenes have art. Nothing was drawn to fill the others. Where no picture survives, the scene is told by the script alone and says so.</p></div>" +
+      "<div><h3>Whose work it is</h3><p>Jean Giraud (Moebius), Chris Foss, H.R. Giger and Alejandro Jodorowsky. It remains theirs and their estates’. This is an unofficial study edition.</p></div>" +
+      '</div><p class="more"><a class="btn" href="#art">See all the art</a></p></section>';
   }
 
-  /* ---------- SCREENING ---------- */
-  var NO_SWEEP = { 250: 1, 126: 1, 253: 1, 228: 1, 246: 1, 313: 1, 365: 1, 249: 1, 213: 1 };
-  function cell(i, placed) {
-    var p = P[i], tag = p.seq ? '<span class="tag">Seq ' + p.seq.join("–") + "</span>" : (placed ? '<span class="tag inf">Placed by caption</span>' : "");
-    var sub = p.cap ? "“" + esc(p.cap[1].replace(/^[“"]|[”"]$/g, "")) + "”" : esc(p.t);
-    return '<div class="cell" id="cell-' + i + '">' + plateLink(i, thumb(i)) + tag + '<span class="sub">' + sub + "</span></div>";
-  }
-  function screening() {
-    var room = ROOMS[0], firstOf = {}, max = D.seqs[D.seqs.length - 1];
-    D.reels.forEach(function (r) { r.items.forEach(function (i) { (P[i].seq || []).forEach(function (s) { if (firstOf[s] === undefined) firstOf[s] = i; }); }); });
-    var map = "";
-    for (var s = 1; s <= max; s++) map += firstOf[s] !== undefined ? '<a href="#cell-' + firstOf[s] + '" data-jump="' + firstOf[s] + '" title="Sequence ' + s + '">' + s + "</a>" : "<span>" + s + "</span>";
-    var total = D.reels.reduce(function (a, r) { return a + r.items.length; }, 0);
-    var reels = D.reels.map(function (r, n) {
-      return '<section class="reel" id="reel-' + r.id + '"><div class="reel-info"><span class="label">Reel ' + (n + 1) + " · " + esc(r.span) + "</span><h2>" + esc(r.title) + "</h2><p>" + esc(r.text) +
-        '</p><button type="button" class="btn" data-act="project" data-reel="' + n + '">Project from here</button>' +
-        (SC.reels[r.id] ? '<a class="reel-read" href="#scene-' + SC.reels[r.id][0] + '">Early draft: ' + (SC.reels[r.id][0] === SC.reels[r.id][1] ? "scene " + SC.reels[r.id][0] : "scenes " + SC.reels[r.id][0] + "–" + SC.reels[r.id][1]) + "</a>" : "") + '</div><div class="strip" data-ctx tabindex="0" aria-label="' + esc(r.title) + ' frames">' +
-        r.items.map(function (i) { return cell(i, true); }).join("") + "</div></section>";
-    }).join("");
-    var loose = '<section class="reel" id="reel-loose"><div class="reel-info"><span class="label">Unplaced</span><h2>Loose leaves</h2><p>Frames and colour sheets with no sequence number and no caption that says where they belong.</p></div><div class="strip" data-ctx tabindex="0" aria-label="Unplaced frames">' +
-      D.loose.map(function (i) { return cell(i, false); }).join("") + "</div></section>";
-    return '<div class="screening">' + head(room, [
-      "Moebius drew the film shot by shot, about 3,000 drawings, each with a line of direction typed beneath it in French and English. Every sheet carries a sequence number in its corner.",
-      "Those numbers put the surviving sheets back in order here. Loose frames with no number are placed by what their captions describe, and say so. Each reel links to the matching scenes of the early draft of the script, which tells the story a little differently."
-    ]) + '<div class="gut" style="padding-bottom:26px"><div style="max-width:1400px;margin:0 auto"><button type="button" class="btn solid" data-act="project">Run the projector · ' + total + " plates</button></div></div>" +
-      '<div class="gut"><div class="seqmap" aria-label="Sequences present in the archive">' + map + '</div><p class="seq-note">Gold squares are sequences with at least one sheet in the archive: ' + Object.keys(firstOf).length + " of the first " + max + ". The rest are missing from this file.</p></div>" +
-      reels + loose + foot(room) + "</div>";
-  }
-
-  /* ---------- PLAYERS ---------- */
-  var FACE = { paul: 410, leto: 380, jessica: 437, duncan: 370, gurney: 354, hawat: 406, yueh: 447, baron: 374, feyd: 372, rabban: 446, piter: 445, general: 375, emperor: 371, irulan: 29, mother: 373, guild: 412, sardaukar: 277, kynes: 378, court: 443 };
-  function players() {
-    var room = ROOMS[1];
-    var houses = D.players.map(function (hs) {
-      return '<section class="house gut"><h2>' + esc(hs.title) + "</h2>" + hs.people.map(function (c) {
-        var all = P.filter(function (p) { return p.who && p.who.indexOf(c.id) >= 0 && p.dup === undefined; }).map(function (p) { return p.i; });
-        all.sort(function (a, b) { return (P[a].room === "design" ? 0 : 1) - (P[b].room === "design" ? 0 : 1) || a - b; });
-        var cast = c.cast ? '<div class="castline"><span class="label">To be played by</span><strong>' + esc(c.cast) + "</strong>" + (c.sure ? "" : "<i>reported</i>") + "</div>" :
-          '<div class="castline"><span class="label">Casting</span><span class="typed" style="color:var(--paper-dim)">not recorded in this archive</span></div>';
-        return '<article class="player" id="who-' + c.id + '" data-ctx><div class="arcana">' + plateLink(FACE[c.id], img(FACE[c.id]), P[FACE[c.id]].w > P[FACE[c.id]].h ? "wide-src" : "") + "<b>" + esc(c.name) + '</b></div><div class="dossier"><h3>' + esc(c.name) + "</h3>" +
-          (c.epithet ? '<p class="epi">' + esc(c.epithet) + "</p>" : "") + cast + (c.note ? '<p class="note">' + esc(c.note) + "</p>" : "") +
-          (LINES[c.id] ? '<p class="spoken typed">Speaks ' + LINES[c.id].n + (LINES[c.id].n === 1 ? " time" : " times") + ' in the early draft. <a href="#scene-' + LINES[c.id].first + '">First line in scene ' + LINES[c.id].first + "</a></p>" : "") +
-          '<span class="label">' + all.length + " plates</span><div class=\"minis\">" + all.map(function (i) { return plateLink(i, thumb(i)); }).join("") + "</div></div></article>";
-      }).join("") + "</section>";
-    }).join("");
-    return '<div class="players">' + head(room, [
-      "Jean Giraud, who signed his science fiction as Moebius, designed every costume. Jodorowsky cast people for what they already were: a painter as the Emperor, a rock singer as the Baron’s heir.",
-      "Casting marked <i>reported</i> is repeated in accounts of the production but is not confirmed by anything in this archive. Where a costume’s owner is uncertain, the plate says which caption it follows."
-    ]) + houses + foot(room) + "</div>";
-  }
-
-  /* ---------- MACHINES ---------- */
-  function machines() {
-    var room = ROOMS[2], painted = [171, 301, 3, 12, 129, 2, 430, 158, 170, 146, 434, 120];
-    var used = {}; painted.forEach(function (i) { used[i] = 1; });
-    var orni = [145, 196, 144, 364, 391], places = [76, 178, 73, 48, 323, 136, 175];
-    orni.concat(places).forEach(function (i) { used[i] = 1; });
-    var drawn = uniq(inRoom(["machine"])).filter(function (i) { return !used[i]; });
-    var text = {
-      171: "The best-known image of the project. It became the poster.", 301: "Skull and crossbones on the flank, spice streaming behind. The bible gives it a design sheet in sequence 1.",
-      3: "The seat of the Emperor, in gold.", 12: "The same palace from directly above.", 129: "Captioned in the bible plate: Leto’s car."
-    };
-    var fleet = painted.map(function (i) {
-      var p = P[i];
-      return '<article class="ship" data-ctx><div class="ship-pic">' + plateLink(i, img(i)) + '</div><div class="ship-info"><span class="label">Plate ' + (i + 1) + " · " + esc(D.credits[p.c]) + "</span><h2>" + esc(p.t) + "</h2>" + (text[i] ? "<p>" + text[i] + "</p>" : "") + "</div></article>";
-    }).join("");
-    return '<div class="hangar">' + head(room, [
-      "Jodorowsky found Chris Foss on the covers of British science-fiction paperbacks and brought him to Paris. He wanted ships that looked alive, patterned like fish and insects.",
-      "Twelve paintings first, then the pencil and ink sheets, then the ornithopters."
-    ]) + '<div class="fleet gut">' + fleet + "</div>" +
-      '<section class="sect gut"><h2>On paper</h2><p class="sub">Ink and pencil sheets. Several are pages of the bible itself, numbered with the sequence in which the machine first appears.</p>' + wall(drawn) + "</section>" +
-      '<section class="sect gut"><h2>Ornithopters</h2><p class="sub">Not all by Foss. Two further ornithopters signed by Ron Cobb belong to a later production and are kept in the Relic room.</p>' + wall(orni) + "</section>" +
-      '<section class="sect gut"><h2>Places</h2><p class="sub">Castles, a hall, a city in a tree. Some of these arrived in the file without any credit.</p>' + wall(places) + "</section>" + foot(room) + "</div>";
-  }
-
-  /* ---------- simple rooms ---------- */
-  function giedi() {
-    var room = ROOMS[3], ids = uniq(inRoom(["giger"])).filter(function (i) { return i !== 440; });
-    var paint = ids.filter(function (i) { return [159, 160, 346, 173, 330, 357, 438, 317, 50, 204, 57].indexOf(i) >= 0; });
-    var sketch = ids.filter(function (i) { return [347, 348, 349, 350, 318, 322].indexOf(i) >= 0; });
-    var rest = ids.filter(function (i) { return paint.indexOf(i) < 0 && sketch.indexOf(i) < 0; });
-    return '<div class="giedi">' + head(room, [
-      "Jodorowsky gave the Harkonnen planet to the Swiss painter H.R. Giger. The castle he painted is a fortress in the shape of a body. In sequence 15 the storyboard goes inside its head.",
-      "The paintings, then the working sketches headed “Schloss Harkonnen”, then the furniture that was built years afterwards."
-    ]) + '<div class="giedi-hero" data-ctx>' + plateLink(440, img(440, true)) + "</div>" +
-      '<section class="sect gut"><h2>The castle</h2><p class="sub">Airbrush paintings and the full-height drawing.</p>' + wall(paint) + "</section>" +
-      '<section class="sect gut"><h2>Sketch sheets</h2><p class="sub">Drawbridges, blades and spires, with notes in German.</p>' + wall(sketch) + "</section>" +
-      '<section class="sect gut"><h2>The chair, and the painter</h2><p class="sub">The Harkonnen chair exists as a real object. It was made after this production had ended.</p>' + wall(rest) + "</section>" + foot(room) + "</div>";
-  }
-  function visions() {
-    var room = ROOMS[4], ids = uniq(inRoom(["vision"]));
-    ids.sort(function (x, y) { return (SCENE_OF[x] === undefined ? 999 : SCENE_OF[x]) - (SCENE_OF[y] === undefined ? 999 : SCENE_OF[y]) || x - y; });
-    var figs = ids.map(function (i) {
-      var sc = SCENE_OF[i];
-      return "<figure>" + plateLink(i, img(i)) + "<figcaption><b>" + (i + 1) + "</b><span>" + esc(P[i].t) + (sc !== undefined ? ' · <a href="#scene-' + sc + '">scene ' + sc + "</a>" : "") + "</span></figcaption></figure>";
-    }).join("");
-    return '<div class="visions" id="visions">' + head(room, [
-      "These coloured-pencil pictures come from an illustrated typescript of the early screenplay. That typescript had " + SLOTS + " pictures. " + ids.length + " of them are in this archive.",
-      "They are hung here in script order and named as the screenplay names them. Each links to its scene in the Word room, where it sits in the text. The source does not credit the artist."
-    ]) + '<section class="sect gut"><div class="wall" data-ctx>' + figs + "</div></section>" + foot(room) + "</div>";
-  }
+  /* ---------- a chapter ---------- */
   function sceneHtml(sc) {
-    var out = "", dlg = false;
+    var text = "", missing = [];
     sc.b.forEach(function (b) {
-      if (b[0] === "a") out += "<p>" + esc(b[1]) + "</p>";
-      else if (b[0] === "d") out += '<p class="dlg"><b>' + esc(b[1]) + " :</b><span>" + esc(b[2]) + "</span></p>";
-      else if (b[0] === "t") out += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
-      else if (b[0] === "p") out += '<span class="pg" title="Page ' + b[1] + ' of the typescript">p. ' + b[1] + "</span>";
-      else if (b[0] === "i") {
-        var cap = "Illustration" + (b[2] ? " " + b[2] : "") + " · " + esc(b[1]);
-        out += b[3] !== null ? '<figure class="ill">' + plateLink(b[3], img(b[3])) + "<figcaption>" + cap + " · plate " + (b[3] + 1) + (b[4] ? "" : " · likely match") + "</figcaption></figure>" :
-          '<div class="ill none"><span>Picture not in the archive</span><p>' + cap + "</p></div>";
-      }
+      if (b[0] === "a") text += "<p>" + esc(b[1]) + "</p>";
+      else if (b[0] === "d") text += '<p class="dlg"><b>' + esc(b[1]) + "</b><span>" + esc(b[2]) + "</span></p>";
+      else if (b[0] === "t") text += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
+      else if (b[0] === "i" && b[3] === null) missing.push(b[1]);
     });
-    return '<article class="scene" id="sc-' + sc.n + '" data-n="' + sc.n + '"><header><b>' + (sc.n || "") + "</b>" + (sc.h ? "<h2>" + esc(sc.h) + "</h2>" : "") + "</header>" + out + "</article>";
+    var ids = ART[sc.n], art = ids.map(plate).join("");
+    if (missing.length) art += '<p class="lost"><b>In the typescript, not in the archive</b>' + missing.map(esc).join("<br>") + "</p>";
+    return '<article class="scene' + (ids.length ? "" : " bare") + '" id="sc-' + sc.n + '"><header><b>' + sc.n + "</b>" + (sc.h ? "<h3>" + esc(sc.h) + "</h3>" : "") +
+      (ids.length ? "" : "<small>No art survives for this scene</small>") + '</header><div class="sc-text">' + text + "</div>" + (art ? '<div class="sc-art" data-ctx>' + art + "</div>" : "") + "</article>";
   }
-  function word() {
-    var room = ROOMS[5], ids = uniq(inRoom(["script"]));
-    if (!SC.scenes.length) return '<div class="word">' + head(room, ["The script could not be loaded."]) + wall(ids) + foot(room) + "</div>";
-    var toc = SC.scenes.map(function (sc) {
-      var first = ""; for (var k = 0; k < sc.b.length && !first; k++) if (sc.b[k][0] === "a") first = sc.b[k][1];
-      var label = sc.h || first.slice(0, 54) + (first.length > 54 ? "…" : "");
-      return '<li data-n="' + sc.n + '"><a href="#scene-' + sc.n + '"><b>' + (sc.n || "·") + "</b><span>" + esc(label) + "</span></a></li>";
-    }).join("");
-    return '<div class="word">' + head(room, [
-      "The early draft of the screenplay, complete: " + (SC.scenes.length - 1) + " numbered scenes by Jodorowsky, adapted from Herbert. The text is a transcription of an illustrated typescript, kept as typed, spelling included.",
-      "Where the typescript had a picture, the slot is kept. " + FILLED + " of the " + SLOTS + " slots are filled from the image archive. The draft frames the film as a projection watched by dog-beings in a Museum of Man. The storyboard sheets in this archive open differently, on a long move through the galaxy."
-    ]) + '<div class="reader gut"><nav class="toc" aria-label="Scenes"><div class="toc-tools"><input type="search" id="script-q" placeholder="Search the script" aria-label="Search the script"><output id="script-n">' + (SC.scenes.length - 1) + ' scenes</output></div><ol id="toc">' + toc + "</ol></nav>" +
-      '<div class="script typed" id="script" data-ctx>' + SC.scenes.map(sceneHtml).join("") + '<p class="end">END</p></div></div>' +
-      '<section class="sect gut"><h2>Pages in the archive</h2><p class="sub">Photographs of typescript pages and of the illustrated edition. Open one to jump to its scene.</p>' + wall(ids) + "</section>" +
-      '<section class="sect gut"><p class="sub">Text source: “Jodorowsky’s Dune Early Draft – Text”, a transcription hosted on the Internet Archive. Scene 101 is absent from it, and one page is headed “85 (continued)” with no scene 85 before it; both are left as found.</p></section>' + foot(room) + "</div>";
-  }
-  function wordReady() {
-    var q = $("#script-q"), toc = $("#toc"), box = $("#script"); if (!q) return;
-    var scenes = $$(".scene", box), items = $$("li", toc), text = scenes.map(function (el) { return el.textContent.toLowerCase(); }), t = 0;
-    var apply = function () {
-      var words = q.value.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; }), n = 0, ranges = [];
-      scenes.forEach(function (el, i) {
-        var ok = words.every(function (w) { return text[i].indexOf(w) >= 0; });
-        el.hidden = !ok; items[i].hidden = !ok; if (ok && i) n++;
-        if (ok && words.length && window.Highlight && ranges.length < 4000) {
-          var tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), node;
-          while ((node = tw.nextNode())) { var low = node.data.toLowerCase(); words.forEach(function (w) { var at = -1; while ((at = low.indexOf(w, at + 1)) >= 0) { var r = new Range(); r.setStart(node, at); r.setEnd(node, at + w.length); ranges.push(r); } }); }
-        }
-      });
-      if (window.Highlight && CSS.highlights) { if (ranges.length) { var hl = new Highlight(); ranges.forEach(function (r) { hl.add(r); }); CSS.highlights.set("hit", hl); } else CSS.highlights.delete("hit"); }
-      $("#script-n").textContent = n + (n === 1 ? " scene" : " scenes");
-    };
-    q.addEventListener("input", function () { clearTimeout(t); t = setTimeout(apply, 180); });
-    if ("IntersectionObserver" in window) {
-      var io = new IntersectionObserver(function (es) {
-        es.forEach(function (e) { if (!e.isIntersecting) return; var li = items[scenes.indexOf(e.target)]; $$("li.on", toc).forEach(function (x) { x.classList.remove("on"); }); li.classList.add("on"); if (toc.scrollHeight > toc.clientHeight) toc.scrollTop = li.offsetTop - toc.clientHeight / 2; });
-      }, { rootMargin: "-20% 0px -70% 0px" });
-      scenes.forEach(function (el) { io.observe(el); });
-    }
-  }
-  function alchemist() {
-    var room = ROOMS[6], ids = uniq(inRoom(["tarot"]));
-    return '<div class="alchemist">' + head(room, [
-      "These pages are not from the Dune book. They are Jodorowsky’s own notebooks on the Tarot of Marseille, written in Spanish, and whoever assembled the file put them in with everything else.",
-      "They are kept together here. Jodorowsky has taught and written about the tarot for decades, and the notebooks show the habit of mind he brought to the film."
-    ]) + '<section class="sect gut">' + wall(ids) + "</section>" + foot(room) + "</div>";
-  }
-  function relic() {
-    var room = ROOMS[7];
-    var book = [96, 115, 122, 383, 389, 134, 123, 118, 381, 138], around = [107, 276, 428, 405, 172, 176, 304, 51, 52, 53, 55, 205, 206];
-    var apoc = uniq(inRoom(["apoc"]));
-    return '<div class="relic">' + head(room, [
-      "The production book is a thick landscape volume in cloth, stamped DUNE. Only a small number were made for the studios. A copy signed by Moebius and Jodorowsky is among the photographs here.",
-      "This room holds the book as a thing: covers, title page, signatures, posters, the one costume that was built, and loose production drawings photographed on a table."
-    ]) + '<section class="sect gut"><h2>The object</h2><p class="sub">Red cloth, blue cloth, a dust jacket with the Foss painting, and the title page.</p>' + wall(book) + "</section>" +
-      '<section class="sect gut"><h2>Around it</h2><p class="sub">Posters, a frame from the 2013 documentary, the Sardaukar costume, and working drawings on tracing paper.</p>' + wall(around) + "</section>" +
-      '<section class="sect gut"><h2>What came after</h2><div class="after">' +
-      "<div><h3>1976</h3><p>The money ran out before shooting. The film rights lapsed and passed to another producer. David Lynch’s <i>Dune</i> was released in 1984.</p></div>" +
-      "<div><h3>1979</h3><p>Dan O’Bannon wrote <i>Alien</i>. Giger designed its creature, Moebius its spacesuits, and Foss painted early ships for it.</p></div>" +
-      "<div><h3>1980</h3><p>Jodorowsky and Moebius began <i>The Incal</i>, a comic that reuses ideas from the unmade film.</p></div>" +
-      "<div><h3>2021</h3><p>A copy of the book sold at Christie’s in Paris for €2.66 million, many times its estimate. The buyers learned afterwards that owning the book gave them no rights in its contents.</p></div>" +
-      "</div></section>" +
-      '<section class="sect gut"><h2>From elsewhere</h2><p class="sub">Five items in the file are not from this production, or cannot be shown to be. They are kept apart so they do not get mistaken for bible pages.</p>' + wall(apoc) + "</section>" + foot(room) + "</div>";
+  function chapter(k) {
+    var c = D.chapters[k], scenes = SC.scenes.filter(function (sc) { return sc.n >= c.a && sc.n <= c.b; });
+    var map = scenes.map(function (sc) { return '<a href="#scene-' + sc.n + '"' + (ART[sc.n].length ? ' class="has"' : "") + ' title="Scene ' + sc.n + (sc.h ? ": " + esc(sc.h) : "") + '">' + sc.n + "</a>"; }).join("");
+    var nav = '<nav class="ch-nav gut"><a class="btn" href="' + (k ? "#ch-" + k : "#home") + '">' + (k ? "← " + esc(D.chapters[k - 1].title) : "← Contents") + "</a>" +
+      (k < D.chapters.length - 1 ? '<a class="btn solid" href="#ch-' + (k + 2) + '">' + esc(D.chapters[k + 1].title) + " →</a>" : '<a class="btn solid" href="#art">All the art →</a>') + "</nav>";
+    return '<header class="ch-head gut"><span class="label">Chapter ' + roman[k] + " of X · scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</span><h1>" + esc(c.title) + '</h1><p class="lede">' + esc(c.text) + "</p>" +
+      '<div class="map" aria-label="Scenes in this chapter">' + map + '</div><p class="map-key"><i class="has"></i> has art <i></i> script only</p></header>' +
+      '<div class="scenes gut">' + scenes.map(sceneHtml).join("") + "</div>" + nav;
   }
 
-  /* ---------- ATLAS ---------- */
-  function atlas() {
-    var room = ROOMS[8], kinds = Object.keys(KIND);
-    var chips = '<button type="button" aria-pressed="true" data-kind="">All 448</button>' + kinds.map(function (k) {
-      return '<button type="button" aria-pressed="false" data-kind="' + k + '">' + KIND[k] + " " + inRoom([k]).length + "</button>";
-    }).join("");
-    var grid = P.map(function (p) {
-      return '<a class="pl" href="#plate-' + (p.i + 1) + '" data-i="' + p.i + '" style="aspect-ratio:' + p.w + "/" + p.h + '" title="' + esc((p.i + 1) + ". " + p.t) + '">' + thumb(p.i) + "<i>" + (p.i + 1) + "</i></a>";
-    }).join("");
-    return '<div class="atlas">' + head(room, ["Every page of the file, in its original order. Filter by kind, search titles and notes, or hide the repeat scans."]) +
-      '<div class="tools gut"><div class="chips" id="chips">' + chips + '</div><div class="tools-row"><input type="search" id="atlas-q" placeholder="Search: Jessica, worm, sequence 12, Foss…" aria-label="Search the plates">' +
-      '<label><input type="checkbox" id="atlas-dup"> Hide repeat scans</label><output id="atlas-n">448 plates</output></div></div>' +
-      '<div class="grid gut" id="grid" data-ctx>' + grid + "</div>" + foot(room) + "</div>";
-  }
-  function atlasReady() {
-    var grid = $("#grid"); if (!grid) return;
-    var kind = "", q = $("#atlas-q"), dup = $("#atlas-dup"), items = $$(".pl", grid);
-    var text = P.map(function (p) { return ((p.i + 1) + " " + p.t + " " + (D.credits[p.c] || "") + " " + (p.n || "") + " " + (p.who || []).join(" ") + " " + (p.seq ? "sequence " + p.seq.join(" sequence ") : "") + " " + (p.cap ? p.cap.join(" ") : "") + " " + KIND[p.room] + (SCENE_OF[p.i] !== undefined ? " scene " + SCENE_OF[p.i] : "")).toLowerCase(); });
-    var apply = function () {
-      var words = q.value.toLowerCase().split(/\s+/).filter(Boolean), n = 0;
-      items.forEach(function (el, i) {
-        var p = P[i], ok = (!kind || p.room === kind) && !(dup.checked && p.dup !== undefined) && words.every(function (w) { return text[i].indexOf(w) >= 0; });
-        el.hidden = !ok; if (ok) n++;
-      });
-      $("#atlas-n").textContent = n + (n === 1 ? " plate" : " plates");
-    };
-    $("#chips").addEventListener("click", function (e) {
-      var b = e.target.closest("button"); if (!b) return;
-      kind = b.dataset.kind; $$("button", this).forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); }); apply();
+  /* ---------- all the art ---------- */
+  function art() {
+    var out = '<header class="ch-head gut"><span class="label">448 plates</span><h1>The Art</h1><p class="lede">Everything in the file, grouped by hand. Open any plate to see it large and to compare the restoration with the scan as found.</p><div class="jump">' +
+      D.groups.map(function (g) { return '<a href="#art" data-scroll="g-' + g.id + '">' + esc(g.title) + "</a>"; }).join("") + "</div></header>";
+    var repeats = P.filter(function (p) { return p.dup !== undefined; });
+    D.groups.forEach(function (g) {
+      var ids = P.filter(function (p) { return g.kinds.indexOf(p.room) >= 0 && p.dup === undefined; }).map(function (p) { return p.i; });
+      out += '<section class="group gut" id="g-' + g.id + '"><h2>' + esc(g.title) + " <small>" + ids.length + "</small></h2><p>" + esc(g.text) + '</p><div class="grid" data-ctx>' + ids.map(thumb).join("") + "</div></section>";
     });
-    q.addEventListener("input", apply); dup.addEventListener("change", apply);
+    out += '<section class="group gut"><details><summary>' + repeats.length + ' repeat scans</summary><p>The same pictures in other scans, crops or watermarks. Not restored.</p><div class="grid" data-ctx>' + repeats.map(function (p) { return thumb(p.i); }).join("") + "</div></details></section>";
+    return out + '<nav class="ch-nav gut"><a class="btn" href="#home">← Contents</a></nav>';
   }
 
-  /* ---------- LOUPE ---------- */
-  var loupe = $("#loupe"), stage = $("#loupe-stage"), limg = $("#loupe-img"), side = $("#loupe-side");
-  var ctx = [], cur = -1, oracle = false, Z = { s: 1, x: 0, y: 0 };
-  function setZoom() { limg.style.transform = "translate(" + Z.x + "px," + Z.y + "px) scale(" + Z.s + ")"; stage.classList.toggle("zoomed", Z.s > 1.01); }
-  function linkPlates(t) { return esc(t).replace(/plate (\d+)/g, function (m, n) { return '<a href="#plate-' + (+n + 1) + '">plate ' + (+n + 1) + "</a>"; }); }
-  function showPlate(i) {
-    var p = P[i]; cur = i; Z = { s: 1, x: 0, y: 0 }; setZoom();
-    loupe.hidden = false; document.body.style.overflow = "hidden";
-    loupe.style.setProperty("--glow", p.col);
-    stage.classList.toggle("small", p.w < 700);
-    limg.src = src(i); limg.alt = p.t; limg.width = p.w; limg.height = p.h;
-    var room = ROOM_OF[p.room], rows = "";
-    var row = function (k, v) { rows += "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>"; };
-    row("Credit", esc(D.credits[p.c] || ""));
-    if (p.seq) row("Sequence", p.seq.join(" and ") + ' · <a href="#screening">see it in order</a>');
-    if (p.cap) row("Typed beneath the frame", '<span class="capen">' + esc(p.cap[1]) + '</span><br><span class="capfr">' + esc(p.cap[0]) + "</span>");
-    if (SCENE_OF[i] !== undefined) row("In the script", '<a href="#scene-' + SCENE_OF[i] + '">Read scene ' + SCENE_OF[i] + " of the early draft</a>");
-    if (p.n) row("Note", linkPlates(p.n));
-    if (p.who) row("Shows", p.who.map(function (w) { var n = ""; D.players.forEach(function (h) { h.people.forEach(function (c) { if (c.id === w) n = c.name; }); }); return '<a href="#players" data-who="' + w + '">' + esc(n) + "</a>"; }).join(", "));
-    if (p.var) row(p.dup !== undefined ? "Repeat scan. Other copies" : "Other scans of this picture", '<span class="minis">' + p.var.map(function (v) { return plateLink(v, thumb(v)); }).join("") + "</span>");
-    row("Kept in", '<a href="#' + room.id + '">' + esc(room.name) + "</a> · " + KIND[p.room]);
-    row("Scan", p.w + " × " + p.h + " px" + (p.w < 700 ? ". This is all the resolution the file has." : ""));
+  /* ---------- plate viewer ---------- */
+  var view = $("#view"), stage = $("#view-stage"), vimg = $("#view-img"), side = $("#view-side"), ctx = [], cur = -1, showOrig = false, zoomed = false;
+  function pan(e) {
+    if (!zoomed || !e) return; var r = stage.getBoundingClientRect();
+    vimg.style.transform = "translate(" + ((r.left + r.width / 2 - e.clientX) * 1.9) + "px," + ((r.top + r.height / 2 - e.clientY) * 1.9) + "px) scale(2.8)";
+  }
+  function setZoom(on, e) { zoomed = on; stage.classList.toggle("zoomed", on); if (on) pan(e); else vimg.style.transform = ""; }
+  stage.addEventListener("click", function (e) { setZoom(!zoomed, e); });
+  stage.addEventListener("pointermove", pan);
+  function show(i) {
+    var p = P[i], s; cur = i; setZoom(false); view.hidden = false; document.body.style.overflow = "hidden";
+    var isRestored = p.r && p.r[2].length;
+    if (!isRestored) showOrig = false;
+    s = showOrig ? [p.w, p.h] : size(i);
+    vimg.src = src(i, showOrig); vimg.width = s[0]; vimg.height = s[1]; vimg.alt = p.t;
+    var rows = "", row = function (k, v) { rows += "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>"; };
+    row("By", esc(D.credits[p.c] || ""));
+    row("What it is", KIND[p.room] + (p.seq ? ", sequence " + p.seq.join(" and ") + " of the storyboard" : ""));
+    if (p.cap) row("Typed beneath the frame", esc(p.cap[1]) + "<br><em>" + esc(p.cap[0]) + "</em>");
+    if (SCENE_OF[i] !== undefined) row("In the story", '<a href="#scene-' + SCENE_OF[i] + '">Scene ' + SCENE_OF[i] + "</a> · " + placing[p.by || "e"]);
+    if (isRestored) row("This image", (showOrig ? "The scan as found, " + p.w + " × " + p.h + " px." : "Restored: " + p.r[2].join(", ") + ". " + p.r[0] + " × " + p.r[1] + " px, from a " + p.w + " × " + p.h + " scan. Detail added by upscaling is machine-made.") +
+      '<br><button type="button" class="btn" data-v="flip">' + (showOrig ? "Show the restoration" : "Show the scan as found") + "</button>");
+    else row("This image", "The scan as found, " + p.w + " × " + p.h + " px. Not restored" + (p.dup !== undefined ? " (a repeat scan)." : "."));
+    if (p.n) row("Note", esc(p.n).replace(/plate (\d+)/g, function (m, n) { return '<a href="#plate-' + (+n + 1) + '">plate ' + (+n + 1) + "</a>"; }));
+    if (p.var) row("Other scans of this picture", p.var.map(function (v) { return '<a href="#plate-' + (v + 1) + '">' + (v + 1) + "</a>"; }).join(", "));
     var pos = ctx.indexOf(i);
-    side.innerHTML = '<span class="no">Plate ' + (i + 1) + " of 448</span><h2>" + esc(p.t) + "</h2><dl>" + rows + '</dl><div class="loupe-nav">' +
-      (oracle ? '<button type="button" class="btn solid" data-l="draw">Draw another</button>' :
-        '<button type="button" class="btn" data-l="prev"' + (pos <= 0 ? " disabled" : "") + '>Previous</button><button type="button" class="btn" data-l="next"' + (pos < 0 || pos >= ctx.length - 1 ? " disabled" : "") + ">Next</button>") + "</div>";
+    side.innerHTML = '<span class="label">Plate ' + (i + 1) + " of 448</span><h2>" + esc(p.t) + "</h2><dl>" + rows + '</dl><div class="view-nav"><button type="button" class="btn" data-v="prev" aria-label="Previous plate"' + (pos <= 0 ? " disabled" : "") +
+      '>←</button><button type="button" class="btn" data-v="next" aria-label="Next plate"' + (pos < 0 || pos >= ctx.length - 1 ? " disabled" : "") + '>→</button><button type="button" class="btn solid" data-v="close">Close</button></div>';
     side.scrollTop = 0;
   }
-  function closeLoupe() { loupe.hidden = true; loupe.classList.remove("flip"); document.body.style.overflow = ""; cur = -1; oracle = false; }
   function step(d) { var pos = ctx.indexOf(cur) + d; if (pos >= 0 && pos < ctx.length) location.hash = "plate-" + (ctx[pos] + 1); }
-  function draw() {
-    var pool = uniq(P.map(function (p) { return p.i; })), i = pool[Math.floor(Math.random() * pool.length)];
-    oracle = true; loupe.classList.remove("flip"); void loupe.offsetWidth; loupe.classList.add("flip");
-    if (location.hash === "#plate-" + (i + 1)) showPlate(i); else location.hash = "plate-" + (i + 1);
-  }
+  function closeView() { location.hash = back; }
   side.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-l]");
-    if (b) { if (b.dataset.l === "draw") draw(); else step(b.dataset.l === "next" ? 1 : -1); return; }
-    var w = e.target.closest("[data-who]"); if (w) pendingWho = w.dataset.who;
+    var b = e.target.closest("[data-v]"); if (!b) return;
+    if (b.dataset.v === "flip") { showOrig = !showOrig; show(cur); } else if (b.dataset.v === "close") closeView(); else step(b.dataset.v === "next" ? 1 : -1);
   });
-  $("#loupe-x").addEventListener("click", function () { location.hash = lastRoom; });
-  stage.addEventListener("wheel", function (e) { e.preventDefault(); var s = Math.min(6, Math.max(1, Z.s * (e.deltaY < 0 ? 1.18 : 0.85))); if (s === 1) { Z.x = Z.y = 0; } Z.s = s; setZoom(); }, { passive: false });
-  var drag = null, moved = false, pts = {};
-  stage.addEventListener("pointerdown", function (e) { pts[e.pointerId] = e; drag = { x: e.clientX - Z.x, y: e.clientY - Z.y, d: 0, s: Z.s }; moved = false; stage.setPointerCapture(e.pointerId); });
-  stage.addEventListener("pointermove", function (e) {
-    if (!drag) return; pts[e.pointerId] = e; var ids = Object.keys(pts);
-    if (ids.length === 2) { var a = pts[ids[0]], b = pts[ids[1]], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); if (!drag.d) drag.d = d; Z.s = Math.min(6, Math.max(1, drag.s * d / drag.d)); moved = true; setZoom(); return; }
-    if (Z.s > 1.01) { Z.x = e.clientX - drag.x; Z.y = e.clientY - drag.y; setZoom(); }
-    if (Math.abs(e.clientX - drag.x - Z.x) + Math.abs(e.movementX) + Math.abs(e.movementY) > 3) moved = true;
-  });
-  var up = function (e) {
-    delete pts[e.pointerId]; if (!drag) return; if (Object.keys(pts).length) return; drag = null;
-    if (!moved && e.type === "pointerup") { if (Z.s > 1.01) Z = { s: 1, x: 0, y: 0 }; else { var r = stage.getBoundingClientRect(); Z.s = 2.6; Z.x = (r.left + r.width / 2 - e.clientX) * 1.6; Z.y = (r.top + r.height / 2 - e.clientY) * 1.6; } setZoom(); }
-  };
-  stage.addEventListener("pointerup", up); stage.addEventListener("pointercancel", up);
-
-  /* ---------- PROJECTOR ---------- */
-  var pj = $("#pj"), gate = $("#pj-gate"), sub = $("#pj-sub"), slate = $("#pj-slate"), bar = $("#pj-bar");
-  var Q = [], qi = 0, timer = 0, playing = true, speed = 1, anim = null, started = 0, left = 0;
-  function buildQueue() {
-    Q = [];
-    D.reels.forEach(function (r, n) { Q.push({ k: "title", r: r, n: n }); r.items.forEach(function (i) { Q.push({ k: "plate", i: i, r: r, n: n }); }); });
-    Q.push({ k: "fin" });
-    bar.innerHTML = D.reels.map(function (r, n) { return '<span style="flex:' + (r.items.length + 1) + '" data-reel="' + n + '" title="' + esc(r.title) + '"><i></i></span>'; }).join("");
-  }
-  function durOf(it) {
-    if (it.k === "title") return 5200; if (it.k === "fin") return 0;
-    var p = P[it.i]; return ((p.room === "board" || p.room === "color") && !NO_SWEEP[it.i] && p.w / p.h > 1.1 ? 17000 : (p.cap ? 7000 : 5500));
-  }
-  function showQ() {
-    clearTimeout(timer); if (anim) { anim.cancel(); anim = null; }
-    var it = Q[qi]; pj.classList.toggle("blue", it.k === "fin"); sub.innerHTML = "";
-    $$("span", bar).forEach(function (s, n) {
-      var first = Q.findIndex(function (x) { return x.n === n; }), len = D.reels[n].items.length + 1;
-      $("i", s).style.transform = "scaleX(" + Math.max(0, Math.min(1, (qi - first + 1) / len)) + ")";
-    });
-    if (it.k === "title") {
-      gate.innerHTML = '<div class="pj-card"><span class="label">Reel ' + (it.n + 1) + " of " + D.reels.length + " · " + esc(it.r.span) + "</span><h2>" + esc(it.r.title) + "</h2><p>" + esc(it.r.text) + "</p></div>";
-      slate.textContent = "Reel " + (it.n + 1) + " · " + it.r.title;
-    } else if (it.k === "fin") {
-      gate.innerHTML = '<div class="fin"><span class="arrow"></span><h2>Fin</h2>' + CREDITS + "</div>";
-      sub.innerHTML = '<p class="en">The whole screen is blue… titles…</p><p class="fr">Tout l’écran est bleu… titres…</p>';
-      $("#pj-play").textContent = "Run it again"; playing = false; return;
-    } else {
-      var p = P[it.i], sweep = (p.room === "board" || p.room === "color") && !NO_SWEEP[it.i] && p.w / p.h > 1.1;
-      gate.innerHTML = '<img src="' + src(it.i) + '" alt="' + esc(p.t) + '"' + (p.w < 1000 ? ' class="lowres"' : "") + ">";
-      var el = $("img", gate), d = durOf(it) / speed;
-      if (!reduced && el.animate) {
-        anim = sweep ? el.animate([
-          { transform: "scale(1)", offset: 0 }, { transform: "scale(1)", offset: .1 },
-          { transform: "scale(2) translate(25%,25%)", offset: .17 }, { transform: "scale(2) translate(-25%,25%)", offset: .38 },
-          { transform: "scale(2) translate(25%,0%)", offset: .45 }, { transform: "scale(2) translate(-25%,0%)", offset: .66 },
-          { transform: "scale(2) translate(25%,-25%)", offset: .73 }, { transform: "scale(2) translate(-25%,-25%)", offset: .94 },
-          { transform: "scale(1)", offset: 1 }
-        ], { duration: d, easing: "ease-in-out", fill: "forwards" }) :
-          el.animate([{ transform: "scale(1)" }, { transform: "scale(1.09)" }], { duration: d, easing: "linear", fill: "forwards" });
-      }
-      if (p.cap) sub.innerHTML = '<p class="en">' + esc(p.cap[1]) + '</p><p class="fr">' + esc(p.cap[0]) + "</p>";
-      slate.textContent = "Reel " + (it.n + 1) + " · " + it.r.title + " · " + (p.seq ? "Sequence " + p.seq.join("–") : "placed by caption") + " · Plate " + (it.i + 1) + (p.cap ? "" : " · " + p.t);
-      var nx = Q[qi + 1]; if (nx && nx.k === "plate") { new Image().src = src(nx.i); }
-    }
-    left = durOf(it) / speed; started = performance.now();
-    if (playing) timer = setTimeout(nextQ, left); else if (anim) anim.pause();
-  }
-  function nextQ() { if (qi < Q.length - 1) { qi++; showQ(); } }
-  function prevQ() { if (qi > 0) { qi--; if (Q[qi].k !== "fin") { playing = true; $("#pj-play").textContent = "Pause"; } showQ(); } }
-  function togglePlay() {
-    if (Q[qi].k === "fin") { qi = 0; playing = true; $("#pj-play").textContent = "Pause"; showQ(); return; }
-    playing = !playing; $("#pj-play").textContent = playing ? "Pause" : "Play";
-    if (playing) { started = performance.now(); timer = setTimeout(nextQ, left); if (anim) anim.play(); }
-    else { clearTimeout(timer); left = Math.max(300, left - (performance.now() - started)); if (anim) anim.pause(); }
-  }
-  function openPj(reel) {
-    buildQueue(); qi = reel ? Q.findIndex(function (x) { return x.n === reel; }) : 0; playing = true; $("#pj-play").textContent = "Pause";
-    pj.hidden = false; document.body.style.overflow = "hidden"; showQ(); $("#pj-play").focus();
-  }
-  function closePj() { clearTimeout(timer); if (anim) anim.cancel(); pj.hidden = true; pj.classList.remove("blue"); gate.innerHTML = ""; document.body.style.overflow = ""; }
-  $("#pj-next").addEventListener("click", nextQ); $("#pj-prev").addEventListener("click", prevQ);
-  $("#pj-play").addEventListener("click", togglePlay); $("#pj-exit").addEventListener("click", closePj);
-  $("#pj-speed").addEventListener("click", function () { speed = speed === 1 ? 2 : speed === 2 ? 0.5 : 1; this.textContent = "Speed " + (speed === 0.5 ? "½" : speed) + "×"; showQ(); });
-  bar.addEventListener("click", function (e) { var s = e.target.closest("[data-reel]"); if (s) { qi = Q.findIndex(function (x) { return x.n === +s.dataset.reel; }); playing = true; $("#pj-play").textContent = "Pause"; showQ(); } });
 
   /* ---------- router ---------- */
-  var VIEWS = { home: home, screening: screening, players: players, machines: machines, giedi: giedi, visions: visions, word: word, alchemist: alchemist, relic: relic, atlas: atlas };
-  var main = $("#room"), lastRoom = "home", rendered = "", pendingWho = "", menu = $("#rooms-menu"), btnRooms = $("#btn-rooms");
-  menu.innerHTML = ROOMS.map(function (r, n) { return '<a href="#' + r.id + '"><b>' + roman[n] + "</b><span>" + esc(r.name) + "</span><small>" + esc(r.line) + "</small></a>"; }).join("");
-  function closeMenu() { menu.hidden = true; btnRooms.setAttribute("aria-expanded", "false"); }
-  btnRooms.addEventListener("click", function () { var open = menu.hidden; menu.hidden = !open; this.setAttribute("aria-expanded", String(open)); });
-  $("#btn-draw").addEventListener("click", function () { closeMenu(); draw(); });
-  function route() {
-    var hsh = location.hash.replace(/^#/, "") || "home", m = /^plate-(\d+)$/.exec(hsh);
-    closeMenu();
-    if (m && +m[1] >= 1 && +m[1] <= 448) {
-      var i = +m[1] - 1;
-      if (!rendered) render(ROOM_OF[P[i].room].id, true);
-      if (ctx.indexOf(i) < 0) ctx = oracle ? [i] : uniq(inRoom(ROOM_OF[P[i].room].rooms)).concat(P[i].dup !== undefined ? [i] : []);
-      showPlate(i); return;
-    }
-    if (!loupe.hidden) closeLoupe();
-    var sm = /^scene-(\d+)$/.exec(hsh);
-    if (sm) {
-      if (rendered !== "word") render("word");
-      var target = $("#sc-" + sm[1]), sq = $("#script-q");
-      if (target && target.hidden && sq) { sq.value = ""; sq.dispatchEvent(new Event("input")); $$(".scene", $("#script")).forEach(function (x) { x.hidden = false; }); }
-      if (target) target.scrollIntoView(); return;
-    }
-    if (!VIEWS[hsh]) { if (/^(cell|reel|who)-/.test(hsh)) return; hsh = "home"; }
-    if (hsh !== rendered) render(hsh);
-    if (pendingWho) { var el = $("#who-" + pendingWho); pendingWho = ""; if (el) el.scrollIntoView(); }
+  var main = $("#main"), rendered = "", back = "home";
+  function render(id) {
+    rendered = back = id;
+    var m = /^ch-(\d+)$/.exec(id);
+    main.innerHTML = m ? chapter(+m[1] - 1) : id === "art" ? art() : home();
+    $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : id)); });
+    $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : "";
   }
-  function render(id, quiet) {
-    rendered = lastRoom = id; main.innerHTML = VIEWS[id]();
-    var r = ROOMS.filter(function (x) { return x.id === id; })[0];
-    $("#here").textContent = r ? "Room " + roman[ROOMS.indexOf(r)] + " · " + r.name : "448 plates · nine rooms";
-    $$("a", menu).forEach(function (a) { if (a.getAttribute("href") === "#" + id) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
-    if (id === "home") homeReady(); if (id === "atlas") atlasReady(); if (id === "word") wordReady();
-    if (!quiet) window.scrollTo(0, 0);
+  function route() {
+    var h = location.hash.replace(/^#/, "") || "home", m;
+    if ((m = /^plate-(\d+)$/.exec(h)) && +m[1] >= 1 && +m[1] <= 448) {
+      var i = +m[1] - 1;
+      if (!rendered) render(SCENE_OF[i] !== undefined ? "ch-" + (chapterOf(SCENE_OF[i]) + 1) : "art");
+      if (ctx.indexOf(i) < 0) ctx = [i];
+      show(i); return;
+    }
+    if (!view.hidden) { view.hidden = true; document.body.style.overflow = ""; cur = -1; if (h === rendered) return; }
+    if ((m = /^scene-(\d+)$/.exec(h))) {
+      var id = "ch-" + (chapterOf(+m[1]) + 1), fresh = rendered !== id; if (fresh) render(id); back = h;
+      var el = $("#sc-" + m[1]); if (el) el.scrollIntoView(); return;
+    }
+    if (h === "film") h = "ch-1";
+    if (!/^ch-(10|[1-9])$/.test(h) && h !== "art") h = "home";
+    if (h !== rendered) { render(h); window.scrollTo(0, 0); }
   }
   document.addEventListener("click", function (e) {
-    var act = e.target.closest("[data-act='project']");
-    if (act) { openPj(act.dataset.reel ? +act.dataset.reel : 0); return; }
-    var j = e.target.closest("[data-jump]");
-    if (j) { e.preventDefault(); var c = $("#cell-" + j.dataset.jump); if (c) { c.scrollIntoView({ block: "center", inline: "center", behavior: reduced ? "auto" : "smooth" }); c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash"); } return; }
+    var j = e.target.closest("[data-scroll]");
+    if (j) { e.preventDefault(); var t = document.getElementById(j.dataset.scroll); if (t) t.scrollIntoView({ behavior: "smooth" }); return; }
     var a = e.target.closest("a.pl");
-    if (a && a.dataset.i) {
-      var box = a.closest("[data-ctx]"); oracle = false; loupe.classList.remove("flip");
-      if (box && !loupe.contains(a)) ctx = $$("a.pl[data-i]", box).filter(function (x) { return !x.hidden; }).map(function (x) { return +x.dataset.i; });
-      else if (loupe.contains(a)) ctx = [cur].concat(P[cur].var || []).sort(function (x, y) { return x - y; });
-    }
-    if (!menu.hidden && !e.target.closest(".bar")) closeMenu();
-  });
-  var vis = null;
-  document.addEventListener("mouseover", function (e) {
-    var a = e.target.closest("#visions a.pl"); if (!a) return;
-    vis = vis || $("#visions"); if (!document.body.contains(vis)) vis = $("#visions");
-    if (vis) vis.style.setProperty("--glow", "color-mix(in srgb, " + P[+a.dataset.i].col + " 45%, #0d0a0f)");
+    if (a && a.dataset.i) { var box = a.closest("[data-ctx]"); showOrig = false; if (box) ctx = $$("a.pl[data-i]", box).map(function (x) { return +x.dataset.i; }); }
   });
   document.addEventListener("keydown", function (e) {
-    if (!pj.hidden) {
-      if (e.key === "Escape") closePj(); else if (e.key === "ArrowRight") nextQ(); else if (e.key === "ArrowLeft") prevQ();
-      else if (e.key === " " && e.target.tagName !== "BUTTON") { e.preventDefault(); togglePlay(); }
-      return;
-    }
-    if (!loupe.hidden) {
-      if (e.key === "Escape") location.hash = lastRoom; else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
-      return;
-    }
-    if (e.key === "Escape") closeMenu();
+    if (view.hidden) return;
+    if (e.key === "Escape") closeView(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
   });
   window.addEventListener("hashchange", route);
   route();

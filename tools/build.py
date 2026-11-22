@@ -50,8 +50,8 @@ def main():
     tmp = tempfile.mkdtemp()
     files = extract(pdf, tmp)
     plates_dir = os.path.join(ROOT, "plates"); thumbs_dir = os.path.join(ROOT, "thumbs")
-    for d in (plates_dir, thumbs_dir):
-        shutil.rmtree(d, ignore_errors=True); os.makedirs(d)
+    os.makedirs(plates_dir, exist_ok=True)
+    shutil.rmtree(thumbs_dir, ignore_errors=True); os.makedirs(thumbs_dir)
 
     rows = {}
     for line in C.ROWS.strip().splitlines():
@@ -64,16 +64,25 @@ def main():
         for i in ids:
             seq_of.setdefault(i, []).append(s)
 
+    rpath = os.path.join(ROOT, "tools", "restored.json")
+    restored = json.load(open(rpath)) if os.path.exists(rpath) else {}
+    placed = {}
+    for label, (plate, sure) in C.ILLUS.items(): placed.setdefault(plate, "s" if sure else "l")
+    for sc, ids in C.PLACE.items():
+        for k in ids: placed.setdefault(k, "e")
     plates, hashes, thumbs = [], [], []
     for i, f in enumerate(files):
         im = Image.open(f); im.load()
         shutil.copyfile(f, os.path.join(plates_dir, "%03d.jpg" % i))
         w, h = im.size
-        t = im.convert("RGB")
-        tw = max(1, round(w * TH / h))
+        apath = os.path.join(ROOT, "art", "%03d.webp" % i)
+        t = (Image.open(apath) if str(i) in restored and os.path.exists(apath) else im).convert("RGB")
+        if t.size != im.size: tw0, th0 = t.size
+        else: tw0, th0 = w, h
+        tw = max(1, round(tw0 * TH / th0))
         if tw > 620:  # very wide plates: cap the width, letting height shrink
             tw = 620
-        t = t.resize((tw, TH if tw < 620 else max(1, round(h * 620 / w))), Image.LANCZOS)
+        t = t.resize((tw, TH if tw < 620 else max(1, round(th0 * 620 / tw0))), Image.LANCZOS)
         thumbs.append(t); hashes.append(dhash(im))
         r = rows[i]
         p = dict(i=i, w=w, h=h, room=r["room"], t=r["t"], c=r["c"], col=avg_color(im))
@@ -81,6 +90,8 @@ def main():
         if r["n"]: p["n"] = r["n"]
         if i in seq_of: p["seq"] = seq_of[i]
         if i in C.CAP: p["cap"] = list(C.CAP[i])
+        if str(i) in restored: r = restored[str(i)]; p["r"] = [r["w"], r["h"], r["did"]]
+        if i in placed: p["by"] = placed[i]
         plates.append(p)
 
     # the same picture in more than one scan: curated groups first, then exact repeats
@@ -131,13 +142,13 @@ def main():
         cur.append((i, t, x, y)); x += t.width; rowh = max(rowh, t.height)
     flush()
 
+    for sc, ids in C.PLACE.items():
+        for k in ids: assert "dup" not in plates[k], ("placed plate is a repeat scan", k)
     data = dict(
         plates=plates, sheets=sheets, credits=C.CREDITS,
-        reels=[dict(id=a, title=b, span=c, text=d, items=e) for a, b, c, d, e in C.REELS],
-        loose=C.LOOSE,
-        players=[dict(id=h, title=ht, people=[dict(id=a, name=b, epithet=c, cast=d, sure=e, note=f)
-                 for a, b, c, d, e, f in ppl]) for h, ht, ppl in C.PLAYERS],
-        seqs=sorted(C.SEQ),
+        chapters=[dict(id=a, title=b, a=c, b=d, key=e, text=f) for a, b, c, d, e, f in C.CHAPTERS],
+        place={str(k): v for k, v in C.PLACE.items()},
+        groups=[dict(id=a, title=b, text=c, kinds=d) for a, b, c, d in C.GROUPS],
     )
     os.makedirs(os.path.join(ROOT, "assets"), exist_ok=True)
     with open(os.path.join(ROOT, "assets", "data.js"), "w") as fh:
