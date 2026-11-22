@@ -51,6 +51,7 @@ Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`). `restore.py` also
 - `tools/catalog.py` is the catalogue: titles, credits, sequences, captions, chapters, and where each picture is placed.
 - `tools/sr.py` is a small runner for the upscaling model.
 - `tools/restored.json` records what was done to each plate.
+- `tools/pack_hosted.py` bundles the original scans into a few files for hosts that cap the number of files per page. The repository itself serves `plates/` directly.
 
 ## Rights
 

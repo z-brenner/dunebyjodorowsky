@@ -10,7 +10,17 @@
   var roman = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
   var KIND = { board: "Storyboard sheet", frame: "Storyboard frame", color: "Colour storyboard", design: "Costume", lineup: "Cast sheet", machine: "Machine", giger: "Giedi Prime", vision: "Screenplay picture", script: "Script page", relic: "The book", tarot: "Notebook", apoc: "From elsewhere" };
 
-  var src = function (i, original) { return P[i].r && !original ? "art/" + pad(i) + ".webp" : "plates/" + pad(i) + ".jpg"; };
+  var src = function (i) { return "art/" + pad(i) + ".webp"; };
+  /* The scan as found. Normally plates/NNN.jpg; a hosted copy may instead bundle the scans
+     into a few pack files (window.DUNE_PACK) and cut each one out on request. */
+  var PACK = window.DUNE_PACK, packs = {}, cut = {};
+  function original(i) {
+    if (!PACK) return Promise.resolve("plates/" + pad(i) + ".jpg");
+    if (cut[i]) return Promise.resolve(cut[i]);
+    var e = PACK.at[i];
+    packs[e[0]] = packs[e[0]] || fetch(PACK.files[e[0]]).then(function (r) { return r.arrayBuffer(); });
+    return packs[e[0]].then(function (buf) { return (cut[i] = URL.createObjectURL(new Blob([buf.slice(e[1], e[1] + e[2])], { type: "image/jpeg" }))); });
+  }
   var size = function (i) { return P[i].r ? [P[i].r[0], P[i].r[1]] : [P[i].w, P[i].h]; };
   var state = function (i) { return P[i].r && P[i].r[2].length ? "Restored" : "Original scan"; };
   var placing = { s: "Placed by the screenplay", l: "Placed by this edition (likely the screenplay's picture)", e: "Placed by this edition" };
@@ -115,7 +125,9 @@
     var isRestored = p.r && p.r[2].length;
     if (!isRestored) showOrig = false;
     s = showOrig ? [p.w, p.h] : size(i);
-    vimg.src = src(i, showOrig); vimg.width = s[0]; vimg.height = s[1]; vimg.alt = p.t;
+    vimg.width = s[0]; vimg.height = s[1]; vimg.alt = p.t;
+    if (p.r && !showOrig) vimg.src = src(i);
+    else { vimg.removeAttribute("src"); original(i).then(function (u) { if (cur === i) vimg.src = u; }); }
     var rows = "", row = function (k, v) { rows += "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>"; };
     row("By", esc(D.credits[p.c] || ""));
     row("What it is", KIND[p.room] + (p.seq ? ", sequence " + p.seq.join(" and ") + " of the storyboard" : ""));
