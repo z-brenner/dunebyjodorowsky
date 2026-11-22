@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--page-->
+<title>Jodorowsky's Dune Bible</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Michroma&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="assets/site.css">
+<!--/page-->
+</head>
+<body>
+<!--page-->
+<header class="bar" id="bar">
+  <a class="bar-stamp" href="#home" aria-label="Back to the book">DUNE</a>
+  <span class="bar-here" id="here"></span>
+  <nav class="bar-nav">
+    <button type="button" id="btn-rooms" aria-expanded="false" aria-controls="rooms-menu">Rooms</button>
+    <button type="button" id="btn-draw">Draw a plate</button>
+  </nav>
+  <div class="rooms-menu" id="rooms-menu" hidden></div>
+</header>
+
+<main id="room" tabindex="-1"></main>
+
+<div class="loupe" id="loupe" hidden role="dialog" aria-modal="true" aria-label="Plate viewer">
+  <div class="loupe-stage" id="loupe-stage"><img id="loupe-img" alt="" draggable="false"></div>
+  <aside class="loupe-side" id="loupe-side"></aside>
+  <button type="button" class="loupe-x" id="loupe-x" aria-label="Close the viewer">Close</button>
+</div>
+
+<div class="pj" id="pj" hidden role="dialog" aria-modal="true" aria-label="Projector">
+  <div class="pj-gate" id="pj-gate"></div>
+  <div class="pj-sub" id="pj-sub"></div>
+  <div class="pj-hud">
+    <div class="pj-slate" id="pj-slate"></div>
+    <div class="pj-bar" id="pj-bar"></div>
+    <div class="pj-keys">
+      <button type="button" id="pj-prev" aria-label="Previous">Back</button>
+      <button type="button" id="pj-play">Pause</button>
+      <button type="button" id="pj-next" aria-label="Next">Skip</button>
+      <button type="button" id="pj-speed">Speed 1×</button>
+      <button type="button" id="pj-exit">Leave</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<!--/page-->
+</body>
+</html>
