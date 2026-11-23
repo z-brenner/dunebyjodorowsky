@@ -104,6 +104,7 @@ def main():
         if view: p["v"] = view
         if str(i) in cut["n"]: p["f"] = cut["n"][str(i)]
         if str(i) in cut.get("partial", {}): p["fp"] = cut["partial"][str(i)]
+        if str(i) in cut.get("estimated", {}): p["fe"] = cut["estimated"][str(i)]
         if i in placed: p["by"] = placed[i]
         plates.append(p)
 

@@ -9,8 +9,10 @@ looks for that frame's own four ruled lines close by and cuts to those, because 
 photographed page curls and a flat grid drifts by a few percent at its far rows.
 
 Each frame is written with its caption strip to frames/NNN-KK.webp at one size.
-A frame the photograph cuts off is kept and recorded as partial. A sheet is cut
-only if most of its frames can be found whole; otherwise it is left as a sheet.
+A frame the photograph cuts off is kept and recorded as partial. A drawn frame
+whose own lines cannot be found is still kept, cut where the grid says it is and
+recorded as estimated, so no drawing drops out of the sequence. A sheet is cut
+only if at least half its frames are found whole; otherwise it is left as a sheet.
 Writes tools/frames.json. Needs numpy, opencv and Pillow.
 """
 import json, os, shutil, sys
@@ -28,6 +30,7 @@ FH = 1 / G.ASPECT                         # frame height, in frame widths
 PITCH = G.PITCH_Y / G.ASPECT              # row pitch, in frame widths
 CAPTION = PITCH - FH                      # caption strip height
 NOT_STANDARD = {400}                      # checked by eye: a pasted-up strip of frames with no caption rows
+NO_ESTIMATES = {91}                       # checked by eye: the bottom row is one wide box holding a typed colour legend, not frames
 
 
 def peaks(profile, lo, hi, least=0.5):
@@ -86,7 +89,7 @@ def main():
     out_dir = os.path.join(ROOT, "frames"); shutil.rmtree(out_dir, ignore_errors=True); os.makedirs(out_dir)
     Hh = int(round((FH + CAPTION + MARGIN - 0.01) * W / (1 + 2 * MARGIN)))
     pw, ph = int((1 + 2 * PAD_X) * S), int((PITCH + 2 * PAD_Y) * S)
-    log, partial, left_whole = {}, {}, {}
+    log, partial, estimated, left_whole = {}, {}, {}, {}
     for i in range(448):
         path = os.path.join(ROOT, "art", "%03d.webp" % i)
         if rows[i] != "board" or i in skip or not os.path.exists(path): continue
@@ -103,7 +106,11 @@ def main():
             src = G.apply(Hm, [[x - PAD_X, y - PAD_Y], [x + 1 + PAD_X, y - PAD_Y], [x + 1 + PAD_X, y + PITCH + PAD_Y], [x - PAD_X, y + PITCH + PAD_Y]])
             patch = cv2.warpPerspective(rgb, cv2.getPerspectiveTransform(src, np.array([[0, 0], [pw, 0], [pw, ph], [0, ph]], np.float32)), (pw, ph), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(255, 255, 255))
             l, rt, t, b, missing = find(patch)
-            if len(missing) > 1 or not set(missing) <= outward(c, r): continue          # not this frame's lines: do not guess
+            rough = len(missing) > 1 or not set(missing) <= outward(c, r)
+            if rough and i in NO_ESTIMATES: continue
+            if rough:                                                                    # its own lines were not found: keep the
+                l, t = int(PAD_X * S), int(PAD_Y * S); rt, b = l + S, t + int(FH * S)    # drawing, cut where the grid says it is
+                missing = []
             inside = cv2.cvtColor(patch[t + 22:b - 22, l + 40:rt - 40], cv2.COLOR_RGB2GRAY).astype(np.float32)
             # ink is darker than the paper right around it; a photograph's shading is not. One small mark counts.
             drawn = inside.size > 0 and int((inside < cv2.blur(inside, (61, 61)) - 45).sum()) >= 60
@@ -112,18 +119,19 @@ def main():
             canvas = np.full((max(y1, ph) - min(y0, 0), max(x1, pw) - min(x0, 0), 3), 255, np.uint8)
             ox, oy = -min(x0, 0), -min(y0, 0); canvas[oy:oy + ph, ox:ox + pw] = patch
             crop = canvas[y0 + oy:y1 + oy, x0 + ox:x1 + ox]
-            keep.append((cv2.resize(crop, (W, Hh), interpolation=cv2.INTER_AREA), bool(missing), drawn))
-        whole = sum(1 for _, p, _ in keep if not p)                                     # ruled frames found whole, drawn in or not
-        if len(keep) < 0.7 * len(located) or whole < 0.5 * len(located) or whole < 3:
+            keep.append((cv2.resize(crop, (W, Hh), interpolation=cv2.INTER_AREA), bool(missing), drawn, rough))
+        whole = sum(1 for _, p, _, rg in keep if not p and not rg)                      # ruled frames found whole, drawn in or not
+        if whole < 0.5 * len(located) or whole < 3:
             left_whole[i] = "%d of %d frames found whole" % (whole, len(located)); continue
-        keep = [(img, p) for img, p, drawn in keep if drawn]                            # a ruled frame nobody drew in is not a shot
+        keep = [(img, p, rg) for img, p, drawn, rg in keep if drawn]                    # a ruled frame nobody drew in is not a shot
         if len(keep) < 2: left_whole[i] = "fewer than two drawn frames"; continue
-        for n, (img, p) in enumerate(keep, 1):
+        for n, (img, p, rg) in enumerate(keep, 1):
             Image.fromarray(img).save(os.path.join(out_dir, "%03d-%02d.webp" % (i, n)), "WEBP", quality=78, method=5)
             if p: partial.setdefault(str(i), []).append(n)
+            if rg: estimated.setdefault(str(i), []).append(n)
         log[str(i)] = len(keep)
-    json.dump(dict(w=W, h=Hh, n=log, partial=partial), open(os.path.join(ROOT, "tools", "frames.json"), "w"), separators=(",", ":"))
-    print("sheets cut: %d | frames: %d (%d partial) | each %d x %d" % (len(log), sum(log.values()), sum(len(v) for v in partial.values()), W, Hh))
+    json.dump(dict(w=W, h=Hh, n=log, partial=partial, estimated=estimated), open(os.path.join(ROOT, "tools", "frames.json"), "w"), separators=(",", ":"))
+    print("sheets cut: %d | frames: %d (%d partial, %d estimated) | each %d x %d" % (len(log), sum(log.values()), sum(len(v) for v in partial.values()), sum(len(v) for v in estimated.values()), W, Hh))
     print("left whole:", left_whole)
 
 if __name__ == "__main__":
