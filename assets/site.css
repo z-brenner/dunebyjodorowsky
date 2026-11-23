@@ -44,6 +44,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .bar nav { display: flex; gap: 4px; }
 .bar nav a { font: 700 11.5px/1 var(--f-type); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; color: var(--paper-dim); padding: 10px; }
 .bar nav a:hover, .bar nav a.on { color: var(--foil); }
+.bar nav { align-items: center; }
+#snd { font: 700 11.5px/1 var(--f-type); letter-spacing: .1em; text-transform: uppercase; color: var(--paper-dim); padding: 8px 10px; border: 1px solid var(--line); border-radius: 2px; margin-left: 4px; white-space: nowrap; }
+#snd:hover { color: var(--foil); border-color: var(--foil); }
+#snd[aria-pressed="true"] { background: var(--foil); color: var(--ink); border-color: var(--foil); }
 
 /* contents */
 .hero { padding-block: clamp(36px, 7vw, 96px) clamp(30px, 5vw, 60px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 30px clamp(24px, 4vw, 64px); align-items: center; max-width: 1400px; margin: 0 auto; }
@@ -190,7 +194,9 @@ mark { background: var(--foil); color: var(--ink); padding: 0 1px; }
   .sc-text .dlg { grid-template-columns: minmax(0, 1fr); }
   .sc-text .dlg span { padding-left: 1.4em; }
   .bar-here { visibility: hidden; }
-  .bar nav a { padding: 10px 7px; }
+  .bar nav a { padding: 10px 5px; letter-spacing: .06em; }
+  #snd { padding: 8px 6px; letter-spacing: .06em; }
+  .bar { gap: 8px; }
   .th { height: 96px; }
   .view { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 50%) minmax(0, 1fr); }
   .view-side { border-left: 0; border-top: 1px solid var(--line); padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-top: 16px; }

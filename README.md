@@ -8,7 +8,8 @@ Open `index.html` in a browser. There is no build step and no server.
 
 - **The Film.** All 153 numbered scenes of the early draft, in ten chapters. Each scene has its text on the left and its art on the right, every picture in the same plate format. A strip at the top of each chapter shows which scenes have art. Long scenes are folded to their first eight paragraphs until opened; one switch opens every scene in full. The contents page maps all 153 scenes at once and remembers where you stopped reading.
 - **The Art.** All 448 plates from the image file, grouped: storyboard, pictures from the screenplay, costumes, machines, Giedi Prime, script pages, everything else.
-- **Shots.** 577 shots in story order, one at a time, each beside its scene's script: storyboard frames and the screenplay's pictures. Where a sheet's grid could be trusted (49 sheets), `tools/frames.py` cut it into its frames, 467 in all, each with its caption strip at one size. 20 of those are frames the photograph cuts off, and 3 are frames whose ruled lines could not be found and are cut from the grid's estimate; each says so. Sheets it could not read are shown whole. Arrow keys step through.
+- **Shots.** 671 shots in story order, one at a time, each beside its scene's script: storyboard frames and the screenplay's pictures. Where a sheet's printed grid could be trusted (49 sheets), `tools/frames.py` cut it into its frames, 467 in all, each with its caption strip at one size. 20 of those are frames the photograph cuts off, and 3 are frames whose ruled lines could not be found and are cut from the grid's estimate; each says so. On 22 more sheets (crops, strips, pasted-up collages) the grid cannot be fitted, so frames are searched for one at a time: 94 were found. Because that search can miss frames, those sheets appear whole first and their frames follow as close-ups. Nine sheets are shown whole only: five are single large drawings, and four gave fewer than two usable frames. Arrow keys step through.
+- **Sound.** Off until switched on. `assets/music.js` generates a score in the browser with the Web Audio API: a low drone, wind and sparse bell notes, in a different mood for each chapter. It is not a recording and not music made for the film; it was written for this edition and is covered by the repository's MIT licence like the rest of the code.
 - **Find.** Search the screenplay; results quote the script's own lines and link to the scene.
 - **The plate viewer.** Any picture opens large, with who made it, what was done to it, where it sits in the story and why, and a button to see the untouched scan.
 
@@ -54,7 +55,7 @@ Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`). `restore.py` also
 
 - `tools/catalog.py` is the catalogue: titles, credits, sequences, captions, chapters, and where each picture is placed.
 - `tools/sr.py` is a small runner for the upscaling model.
-- `tools/grid.py` finds the printed grid on a storyboard sheet; `tools/frames.py` uses it to cut sheets into frames (`frames/`, recorded in `tools/frames.json`).
+- `tools/grid.py` finds the printed grid on a storyboard sheet, and has a second, grid-free detector (`quads`) for sheets the grid does not fit; `tools/frames.py` uses it to cut sheets into frames (`frames/`, recorded in `tools/frames.json`).
 - `tools/restored.json` records what was done to each plate.
 - `view/` holds half-size copies of the restored plates (1,100 px) that the pages load in the flow; the viewer loads the full-size copy from `art/`. `tools/build.py` writes them.
 - `tools/pack_hosted.py` bundles the original scans into a few files for hosts that cap the number of files per page. The repository itself serves `plates/` directly.
