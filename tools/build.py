@@ -103,6 +103,8 @@ def main():
         if str(i) in restored: r = restored[str(i)]; p["r"] = [r["w"], r["h"], r["did"]]
         if view: p["v"] = view
         if str(i) in cut["n"]: p["f"] = cut["n"][str(i)]
+        if str(i) in cut.get("partial", {}): p["fp"] = cut["partial"][str(i)]
+        if str(i) in cut.get("estimated", {}): p["fe"] = cut["estimated"][str(i)]
         if i in placed: p["by"] = placed[i]
         plates.append(p)
 
@@ -163,6 +165,10 @@ def main():
         groups=[dict(id=a, title=b, text=c, kinds=d) for a, b, c, d in C.GROUPS],
         frame=[cut["w"], cut["h"]],
     )
+    # every published image folder needs a caching rule, or the host serves it uncached
+    rules = open(os.path.join(ROOT, "_headers")).read()
+    for folder in ("art", "plates", "view", "frames", "thumbs", "assets"):
+        assert "/%s/*" % folder in rules, "_headers has no caching rule for /%s/" % folder
     os.makedirs(os.path.join(ROOT, "assets"), exist_ok=True)
     with open(os.path.join(ROOT, "assets", "data.js"), "w") as fh:
         fh.write("window.DUNE=" + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n")

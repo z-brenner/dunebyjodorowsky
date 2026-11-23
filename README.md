@@ -8,7 +8,7 @@ Open `index.html` in a browser. There is no build step and no server.
 
 - **The Film.** All 153 numbered scenes of the early draft, in ten chapters. Each scene has its text on the left and its art on the right, every picture in the same plate format. A strip at the top of each chapter shows which scenes have art. Long scenes are folded to their first eight paragraphs until opened; one switch opens every scene in full. The contents page maps all 153 scenes at once and remembers where you stopped reading.
 - **The Art.** All 448 plates from the image file, grouped: storyboard, pictures from the screenplay, costumes, machines, Giedi Prime, script pages, everything else.
-- **Shots.** 582 shots in story order, one at a time, each beside its scene's script: storyboard frames and the screenplay's pictures. Where a sheet's grid could be trusted (51 sheets), `tools/frames.py` cut it into its frames, 474 in all, each squared up with its caption strip. Sheets it could not read are shown whole. Arrow keys step through.
+- **Shots.** 577 shots in story order, one at a time, each beside its scene's script: storyboard frames and the screenplay's pictures. Where a sheet's grid could be trusted (49 sheets), `tools/frames.py` cut it into its frames, 467 in all, each with its caption strip at one size. 20 of those are frames the photograph cuts off, and 3 are frames whose ruled lines could not be found and are cut from the grid's estimate; each says so. Sheets it could not read are shown whole. Arrow keys step through.
 - **Find.** Search the screenplay; results quote the script's own lines and link to the scene.
 - **The plate viewer.** Any picture opens large, with who made it, what was done to it, where it sits in the story and why, and a button to see the untouched scan.
 
@@ -30,7 +30,7 @@ Upscaling invents detail. The fine texture in a restored plate was produced by a
 - **Chapter titles and one-line chapter descriptions:** this edition's.
 - **Pictures placed by the screenplay:** 39 pictures matched to the typescript's own list of illustrations. Four of these matches were made by content and are labelled "likely".
 - **Pictures placed by this edition:** everything else, including all the storyboard, placed from sequence numbers and captions (`PLACE` in `tools/catalog.py`). The storyboard is a later version of the film than this draft, so the fit is loose.
-- **Frames cut from sheets:** made by software from the restored sheets. A frame may show a sliver of its neighbour or of the page header, and a shot's frame is not matched to particular lines of the script, only to its scene.
+- **Frames cut from sheets:** made by software from the restored sheets. The grid says roughly where a frame is; the cutter then finds that frame's own four ruled lines and cuts to them, because a photographed page curls. No drawn frame is dropped: if a frame's lines cannot be found it is cut from the estimate. The one exception is plate 92, whose bottom row is a typed colour legend, not frames. An automatic check of all 444 whole frames flags 40 where one side sits slightly off its line: those show the whole drawing but are tilted or show a sliver of the neighbouring frame. A shot is matched to its scene, not to particular lines of the script.
 - **Gaps:** nothing was drawn or generated to fill scenes with no art. Those scenes are told by the script alone and say so. Pictures the typescript had but the archive lacks are listed by name.
 
 ## Other things that are uncertain
