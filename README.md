@@ -6,8 +6,9 @@ Open `index.html` in a browser. There is no build step and no server.
 
 ## What is in it
 
-- **The Film.** All 153 numbered scenes of the early draft, in ten chapters. Each scene has its text on the left and its art on the right, every picture in the same plate format. A strip at the top of each chapter shows which scenes have art.
+- **The Film.** All 153 numbered scenes of the early draft, in ten chapters. Each scene has its text on the left and its art on the right, every picture in the same plate format. A strip at the top of each chapter shows which scenes have art. Long scenes are folded to their first eight paragraphs until opened; one switch opens every scene in full. The contents page maps all 153 scenes at once and remembers where you stopped reading.
 - **The Art.** All 448 plates from the image file, grouped: storyboard, pictures from the screenplay, costumes, machines, Giedi Prime, script pages, everything else.
+- **Find.** Search the screenplay; results quote the script's own lines and link to the scene.
 - **The plate viewer.** Any picture opens large, with who made it, what was done to it, where it sits in the story and why, and a button to see the untouched scan.
 
 Plate numbers match the page numbers of the source PDF.
@@ -51,7 +52,12 @@ Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`). `restore.py` also
 - `tools/catalog.py` is the catalogue: titles, credits, sequences, captions, chapters, and where each picture is placed.
 - `tools/sr.py` is a small runner for the upscaling model.
 - `tools/restored.json` records what was done to each plate.
+- `view/` holds half-size copies of the restored plates (1,100 px) that the pages load in the flow; the viewer loads the full-size copy from `art/`. `tools/build.py` writes them.
 - `tools/pack_hosted.py` bundles the original scans into a few files for hosts that cap the number of files per page. The repository itself serves `plates/` directly.
+
+## Publishing
+
+`wrangler.jsonc` publishes the repository root as a static site on Cloudflare Workers (`npx wrangler deploy`). `.assetsignore` keeps `.git`, `tools/` and the docs out of the upload, `_headers` sets image caching, and `404.html` is the not-found page. Pushes to `main` deploy.
 
 ## Rights
 
