@@ -68,6 +68,8 @@ def main():
 
     rpath = os.path.join(ROOT, "tools", "restored.json")
     restored = json.load(open(rpath)) if os.path.exists(rpath) else {}
+    fpath = os.path.join(ROOT, "tools", "frames.json")
+    cut = json.load(open(fpath)) if os.path.exists(fpath) else dict(w=0, h=0, n={})
     placed = {}
     for label, (plate, sure) in C.ILLUS.items(): placed.setdefault(plate, "s" if sure else "l")
     for sc, ids in C.PLACE.items():
@@ -100,6 +102,7 @@ def main():
         if i in C.CAP: p["cap"] = list(C.CAP[i])
         if str(i) in restored: r = restored[str(i)]; p["r"] = [r["w"], r["h"], r["did"]]
         if view: p["v"] = view
+        if str(i) in cut["n"]: p["f"] = cut["n"][str(i)]
         if i in placed: p["by"] = placed[i]
         plates.append(p)
 
@@ -158,6 +161,7 @@ def main():
         chapters=[dict(id=a, title=b, a=c, b=d, key=e, text=f) for a, b, c, d, e, f in C.CHAPTERS],
         place={str(k): v for k, v in C.PLACE.items()},
         groups=[dict(id=a, title=b, text=c, kinds=d) for a, b, c, d in C.GROUPS],
+        frame=[cut["w"], cut["h"]],
     )
     os.makedirs(os.path.join(ROOT, "assets"), exist_ok=True)
     with open(os.path.join(ROOT, "assets", "data.js"), "w") as fh:

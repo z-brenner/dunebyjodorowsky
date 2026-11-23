@@ -8,6 +8,7 @@ Open `index.html` in a browser. There is no build step and no server.
 
 - **The Film.** All 153 numbered scenes of the early draft, in ten chapters. Each scene has its text on the left and its art on the right, every picture in the same plate format. A strip at the top of each chapter shows which scenes have art. Long scenes are folded to their first eight paragraphs until opened; one switch opens every scene in full. The contents page maps all 153 scenes at once and remembers where you stopped reading.
 - **The Art.** All 448 plates from the image file, grouped: storyboard, pictures from the screenplay, costumes, machines, Giedi Prime, script pages, everything else.
+- **Shots.** 582 shots in story order, one at a time, each beside its scene's script: storyboard frames and the screenplay's pictures. Where a sheet's grid could be trusted (51 sheets), `tools/frames.py` cut it into its frames, 474 in all, each squared up with its caption strip. Sheets it could not read are shown whole. Arrow keys step through.
 - **Find.** Search the screenplay; results quote the script's own lines and link to the scene.
 - **The plate viewer.** Any picture opens large, with who made it, what was done to it, where it sits in the story and why, and a button to see the untouched scan.
 
@@ -18,7 +19,7 @@ Plate numbers match the page numbers of the source PDF.
 The source is a 448-page PDF of scans collected online, mostly small. `tools/restore.py` makes a restored copy of each unique picture in `art/`. The originals in `plates/` are never changed.
 
 - **Lighting evened** on storyboard sheets and cast sheets, so grey photographed paper becomes white.
-- **Straightened**, for storyboard sheets photographed at an angle. The frames' own ruled edges are used to undo the tilt. A result is kept only if the frames measurably got squarer; flat scans are left alone. This is conservative, so some tilted sheets are not corrected.
+- **Straightened**, for storyboard sheets photographed at an angle. The book's sheets carry a printed grid of frames, the same on every sheet, so `tools/grid.py` fits that grid to the frames it can find and undoes the camera's view. 21 sheets are corrected. A grid is used only when at least four frames in two rows and two columns agree and the frames it predicts are really there; flat scans and pasted-up collages are left alone.
 - **Upscaled 4×** with Real-ESRGAN (`realesr-general-x4v3`), blended with a plain resize so the scan's own texture is not lost, then capped at 2,200 px on the long side.
 
 Upscaling invents detail. The fine texture in a restored plate was produced by a model guessing from a small scan. Tiny typed captions do not become readable. Restored plates are labelled as restored everywhere they appear.
@@ -29,6 +30,7 @@ Upscaling invents detail. The fine texture in a restored plate was produced by a
 - **Chapter titles and one-line chapter descriptions:** this edition's.
 - **Pictures placed by the screenplay:** 39 pictures matched to the typescript's own list of illustrations. Four of these matches were made by content and are labelled "likely".
 - **Pictures placed by this edition:** everything else, including all the storyboard, placed from sequence numbers and captions (`PLACE` in `tools/catalog.py`). The storyboard is a later version of the film than this draft, so the fit is loose.
+- **Frames cut from sheets:** made by software from the restored sheets. A frame may show a sliver of its neighbour or of the page header, and a shot's frame is not matched to particular lines of the script, only to its scene.
 - **Gaps:** nothing was drawn or generated to fill scenes with no art. Those scenes are told by the script alone and say so. Pictures the typescript had but the archive lacks are listed by name.
 
 ## Other things that are uncertain
@@ -43,6 +45,7 @@ Upscaling invents detail. The fine texture in a restored plate was produced by a
 ```
 python3 tools/build.py /path/to/Jodorowskys_Dune.pdf
 python3 tools/restore.py /path/to/realesr-general-x4v3.pth
+python3 tools/frames.py
 python3 tools/build.py /path/to/Jodorowskys_Dune.pdf        # again, to pick up the restored plates
 python3 tools/build_script.py "/path/to/Jodorowskys Dune Early Draft - Text.pdf"
 ```
@@ -51,6 +54,7 @@ Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`). `restore.py` also
 
 - `tools/catalog.py` is the catalogue: titles, credits, sequences, captions, chapters, and where each picture is placed.
 - `tools/sr.py` is a small runner for the upscaling model.
+- `tools/grid.py` finds the printed grid on a storyboard sheet; `tools/frames.py` uses it to cut sheets into frames (`frames/`, recorded in `tools/frames.json`).
 - `tools/restored.json` records what was done to each plate.
 - `view/` holds half-size copies of the restored plates (1,100 px) that the pages load in the flow; the viewer loads the full-size copy from `art/`. `tools/build.py` writes them.
 - `tools/pack_hosted.py` bundles the original scans into a few files for hosts that cap the number of files per page. The repository itself serves `plates/` directly.

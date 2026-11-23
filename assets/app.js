@@ -36,6 +36,17 @@
     ART[sc.n] = ids;
   });
   var chapterOf = function (n) { for (var k = 0; k < D.chapters.length; k++) if (n >= D.chapters[k].a && n <= D.chapters[k].b) return k; return 0; };
+  /* Shots: every storyboard frame and screenplay picture, in story order. A sheet that could be
+     cut into frames gives one shot per frame; anything else is one shot. */
+  var SHOTS = [], FIRST_SHOT = {}, IN_REEL = { board: 1, frame: 1, color: 1, vision: 1 };
+  SC.scenes.forEach(function (sc) {
+    (ART[sc.n] || []).forEach(function (i) {
+      if (!IN_REEL[P[i].room]) return;
+      if (FIRST_SHOT[sc.n] === undefined) FIRST_SHOT[sc.n] = SHOTS.length + 1;
+      if (P[i].f) for (var k = 1; k <= P[i].f; k++) SHOTS.push({ i: i, k: k, sc: sc.n }); else SHOTS.push({ i: i, k: 0, sc: sc.n });
+    });
+  });
+  var sceneBy = {}; SC.scenes.forEach(function (sc) { sceneBy[sc.n] = sc; });
 
   /* ---------- pieces ---------- */
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -67,7 +78,7 @@
       return '<div class="fm-ch"><b>' + roman[k] + "</b><div>" + cells + "</div></div>";
     }).join("");
     return '<section class="hero gut"><div class="hero-text">' + CREDITS + '<p class="lede">The film Alejandro Jodorowsky prepared in the mid-1970s and never shot, told here from what survives of it: the early draft of the screenplay, and the drawings and paintings made for it.</p>' +
-      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
+      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shot-1">Shot by shot</a>' + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
       '<section class="gut"><ol class="chapters">' + D.chapters.map(function (c, k) {
         return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3, "(max-width: 600px) 94vw, 320px") + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
       }).join("") + "</ol></section>" +
@@ -77,6 +88,7 @@
       "<div><h3>The pictures</h3><p>Every picture comes from one 448-page file of scans gathered online. " + restored + " of them have been restored for this edition: uneven lighting flattened on the pencil sheets, " + straight + " photographed sheets straightened, and small scans enlarged four times by a neural upscaler.</p></div>" +
       "<div><h3>What restoring changes</h3><p>Upscaling invents detail. The fine texture in a restored plate was made by a machine guessing from a small scan, and tiny typed captions do not become readable. Each plate says whether it is restored, and the viewer shows the untouched scan on request.</p></div>" +
       "<div><h3>Where pictures sit</h3><p>Some pictures are placed by the screenplay’s own list of illustrations. The rest, including all the storyboard, are placed by this edition from sequence numbers and captions. Each plate says which. The storyboard is a later version of the film than this draft, so the fit is loose.</p></div>" +
+      "<div><h3>Shot by shot</h3><p>" + SHOTS.length + " shots in story order: storyboard frames and the screenplay’s pictures, each beside its scene. Where a sheet’s printed grid could be found, software cut the sheet into its frames and squared each one up. Sheets it could not read are shown whole.</p></div>" +
       "<div><h3>The gaps</h3><p>" + withArt + " of the " + (SC.scenes.length - 1) + " scenes have art. Nothing was drawn to fill the others. Where no picture survives, the scene is told by the script alone and says so.</p></div>" +
       "<div><h3>Whose work it is</h3><p>Jean Giraud (Moebius), Chris Foss, H.R. Giger and Alejandro Jodorowsky. It remains theirs and their estates’. This is an unofficial study edition.</p></div>" +
       '</div><p class="more"><a class="btn" href="#art">See all the art</a></p></section>';
@@ -97,7 +109,7 @@
     var ids = ART[sc.n], art = ids.map(plate).join("");
     if (missing.length) art += '<p class="lost"><b>In the typescript, not in the archive</b>' + missing.map(esc).join("<br>") + "</p>";
     return '<article class="scene' + (ids.length ? "" : " bare") + '" id="sc-' + sc.n + '" data-n="' + sc.n + '"><header><b>' + sc.n + "</b>" + (sc.h ? "<h3>" + esc(sc.h) + "</h3>" : "") +
-      (ids.length ? "" : "<small>No art survives for this scene</small>") + '</header><div class="sc-text">' + text + "</div>" + (art ? '<div class="sc-art" data-ctx>' + art + "</div>" : "") + "</article>";
+      (ids.length ? (FIRST_SHOT[sc.n] ? '<a class="to-shots" href="#shot-' + FIRST_SHOT[sc.n] + '">Shot by shot →</a>' : "") : "<small>No art survives for this scene</small>") + '</header><div class="sc-text">' + text + "</div>" + (art ? '<div class="sc-art" data-ctx>' + art + "</div>" : "") + "</article>";
   }
   function chapter(k) {
     var c = D.chapters[k], scenes = SC.scenes.filter(function (sc) { return sc.n >= c.a && sc.n <= c.b; }), openAll = store.get("dune.open") === "1";
@@ -162,6 +174,24 @@
     if (b.dataset.v === "flip") { showOrig = !showOrig; show(cur); } else if (b.dataset.v === "close") closeView(); else step(b.dataset.v === "next" ? 1 : -1);
   });
 
+  /* ---------- shot by shot ---------- */
+  function shotSrc(sh) { return sh.k ? "frames/" + pad(sh.i) + "-" + ("0" + sh.k).slice(-2) + ".webp" : (P[sh.i].v ? "view/" : "art/") + pad(sh.i) + ".webp"; }
+  function shot(n) {
+    var sh = SHOTS[n - 1], p = P[sh.i], sc = sceneBy[sh.sc], k = chapterOf(sh.sc), text = "";
+    sc.b.forEach(function (b) {
+      if (b[0] === "a") text += "<p>" + esc(b[1]) + "</p>";
+      else if (b[0] === "d") text += '<p class="dlg"><b>' + esc(b[1]) + "</b><span>" + esc(b[2]) + "</span></p>";
+      else if (b[0] === "t") text += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
+    });
+    var dims = sh.k ? D.frame : (p.v || size(sh.i));
+    var what = sh.k ? "Frame " + sh.k + " of " + p.f + ", cut from plate " + (sh.i + 1) + " and squared up by this edition" : KIND[p.room] + ", plate " + (sh.i + 1);
+    return '<div class="shot"><div class="shot-stage"><a class="pl" href="#plate-' + (sh.i + 1) + '" data-i="' + sh.i + '" title="See the whole plate"><img src="' + shotSrc(sh) + '" width="' + dims[0] + '" height="' + dims[1] + '" alt="' + esc(p.t) + '"></a>' +
+      '<p class="shot-cap"><b>' + esc(p.t) + "</b>" + esc(what) + " · " + esc(D.credits[p.c] || "") + " · " + state(sh.i) + " · " + placing[p.by || "e"] + "</p>" +
+      '<nav class="shot-nav"><a class="btn' + (n > 1 ? "" : " off") + '" href="#shot-' + Math.max(1, n - 1) + '" aria-label="Previous shot">←</a><span>Shot ' + n + " of " + SHOTS.length + '</span><a class="btn solid' + (n < SHOTS.length ? "" : " off") + '" href="#shot-' + Math.min(SHOTS.length, n + 1) + '" aria-label="Next shot">→</a></nav></div>' +
+      '<aside class="shot-side" data-sc="' + sh.sc + '"><span class="label">Chapter ' + roman[k] + " · " + esc(D.chapters[k].title) + '</span><h2><b>' + sh.sc + "</b>" + esc(sc.h || "Scene " + sh.sc) + '</h2><p class="shot-note">The script for this scene. The storyboard is a later version of the film, so a shot may not match these lines. <a href="#scene-' + sh.sc + '">Open the scene</a></p><div class="sc-text">' + text + "</div></aside></div>";
+  }
+  function shotReady(n) { if (n < SHOTS.length) { var im = new Image(); im.src = shotSrc(SHOTS[n]); } }
+
   /* ---------- whichever column is shorter stays in view ---------- */
   function layout() {
     var avail = window.innerHeight - 80, wide = window.innerWidth > 860;
@@ -218,10 +248,11 @@
   function render(id) {
     rendered = back = id;
     var m = /^ch-(\d+)$/.exec(id);
-    main.innerHTML = m ? chapter(+m[1] - 1) : id === "art" ? art() : id === "find" ? find() : home();
-    $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : id)); });
-    $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : "";
-    if (m) chapterReady(); else if (id === "find") findReady();
+    var sm = /^shot-(\d+)$/.exec(id), side = $(".shot-side"), keep = sm && side && +side.dataset.sc === SHOTS[+sm[1] - 1].sc ? side.scrollTop : 0;
+    main.innerHTML = m ? chapter(+m[1] - 1) : sm ? shot(+sm[1]) : id === "art" ? art() : id === "find" ? find() : home();
+    $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : sm ? "shots" : id)); });
+    $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : sm ? "Shot " + sm[1] + " of " + SHOTS.length : "";
+    if (m) chapterReady(); else if (id === "find") findReady(); else if (sm) { shotReady(+sm[1]); if (keep) $(".shot-side").scrollTop = keep; }
   }
   function route() {
     var h = location.hash.replace(/^#/, "") || "home", m;
@@ -237,7 +268,9 @@
       var el = $("#sc-" + m[1]); if (el) { unfold(el); layout(); el.scrollIntoView(); } return;
     }
     if (h === "film") h = "ch-1";
-    if (!/^ch-(10|[1-9])$/.test(h) && h !== "art" && h !== "find") h = "home";
+    if (h === "shots") h = "shot-1";
+    if ((m = /^shot-(\d+)$/.exec(h))) h = "shot-" + Math.min(SHOTS.length, Math.max(1, +m[1]));
+    else if (!/^ch-(10|[1-9])$/.test(h) && h !== "art" && h !== "find") h = "home";
     if (h !== rendered) { render(h); window.scrollTo(0, 0); }
   }
   document.addEventListener("click", function (e) {
@@ -250,7 +283,11 @@
     if (a && a.dataset.i) { var box = a.closest("[data-ctx]"); showOrig = false; if (box) ctx = $$("a.pl[data-i]", box).map(function (x) { return +x.dataset.i; }); }
   });
   document.addEventListener("keydown", function (e) {
-    if (view.hidden) return;
+    if (view.hidden) {
+      var sm = /^shot-(\d+)$/.exec(rendered);
+      if (sm && e.target.tagName !== "INPUT" && (e.key === "ArrowRight" || e.key === "ArrowLeft")) location.hash = "shot-" + Math.min(SHOTS.length, Math.max(1, +sm[1] + (e.key === "ArrowRight" ? 1 : -1)));
+      return;
+    }
     if (e.key === "Escape") closeView(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
   });
   var rz = 0;
