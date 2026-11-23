@@ -1,0 +1,10 @@
+// Cloudflare Workers config: publishes this repository as a static site.
+// `npx wrangler deploy` reads this file. Files listed in .assetsignore are not published.
+{
+  "name": "dunebyjodorowsky",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "404-page"
+  }
+}
