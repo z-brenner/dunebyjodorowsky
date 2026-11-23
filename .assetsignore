@@ -1,0 +1,11 @@
+# Not part of the published site
+.git
+.gitignore
+.assetsignore
+.crux
+.wrangler
+node_modules
+tools
+README.md
+LICENSE
+wrangler.jsonc

@@ -1,0 +1,8 @@
+/art/*
+  Cache-Control: public, max-age=2592000
+/plates/*
+  Cache-Control: public, max-age=2592000
+/thumbs/*
+  Cache-Control: public, max-age=86400
+/assets/*
+  Cache-Control: public, max-age=300
