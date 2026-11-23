@@ -3,7 +3,7 @@
 
     python3 tools/build.py /path/to/Jodorowskys_Dune.pdf
 
-Needs poppler's `pdfimages` and Pillow. Writes plates/, thumbs/ and
+Needs poppler's `pdfimages` and Pillow. Writes plates/, thumbs/, view/ and
 assets/data.js at the repository root.
 """
 import json, os, subprocess, sys, tempfile, shutil
@@ -14,6 +14,7 @@ import catalog as C
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TH = 260          # thumbnail height in the sprite sheets
 SHEET_W = 2340    # sprite sheet width
+VIEW = 1100        # long side of the in-page copy of each restored plate
 SHEET_ROWS = 8
 
 
@@ -51,6 +52,7 @@ def main():
     files = extract(pdf, tmp)
     plates_dir = os.path.join(ROOT, "plates"); thumbs_dir = os.path.join(ROOT, "thumbs")
     os.makedirs(plates_dir, exist_ok=True)
+    view_dir = os.path.join(ROOT, "view"); shutil.rmtree(view_dir, ignore_errors=True); os.makedirs(view_dir)
     shutil.rmtree(thumbs_dir, ignore_errors=True); os.makedirs(thumbs_dir)
 
     rows = {}
@@ -77,6 +79,12 @@ def main():
         w, h = im.size
         apath = os.path.join(ROOT, "art", "%03d.webp" % i)
         t = (Image.open(apath) if str(i) in restored and os.path.exists(apath) else im).convert("RGB")
+        view = None
+        if t.size != im.size or str(i) in restored:      # a half-size copy for reading in the page
+            f = min(1.0, VIEW / max(t.size))
+            if f < 1:
+                v = t.resize((round(t.width * f), round(t.height * f)), Image.LANCZOS)
+                v.save(os.path.join(view_dir, "%03d.webp" % i), "WEBP", quality=78, method=5); view = [v.width, v.height]
         if t.size != im.size: tw0, th0 = t.size
         else: tw0, th0 = w, h
         tw = max(1, round(tw0 * TH / th0))
@@ -91,6 +99,7 @@ def main():
         if i in seq_of: p["seq"] = seq_of[i]
         if i in C.CAP: p["cap"] = list(C.CAP[i])
         if str(i) in restored: r = restored[str(i)]; p["r"] = [r["w"], r["h"], r["did"]]
+        if view: p["v"] = view
         if i in placed: p["by"] = placed[i]
         plates.append(p)
 

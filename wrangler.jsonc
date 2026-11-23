@@ -6,5 +6,13 @@
   "assets": {
     "directory": "./",
     "not_found_handling": "404-page"
+  },
+  // Matches the logging setting turned on in the Cloudflare dashboard, so a deploy does not switch it off.
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true
+    }
   }
 }

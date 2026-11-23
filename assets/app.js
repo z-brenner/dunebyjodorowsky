@@ -38,9 +38,11 @@
   var chapterOf = function (n) { for (var k = 0; k < D.chapters.length; k++) if (n >= D.chapters[k].a && n <= D.chapters[k].b) return k; return 0; };
 
   /* ---------- pieces ---------- */
-  function img(i, eager) {
-    var s = size(i);
-    return '<img src="' + src(i) + '" width="' + s[0] + '" height="' + s[1] + '" alt="' + esc(P[i].t) + '"' + (eager ? "" : ' loading="lazy"') + ' decoding="async">';
+  var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  function img(i, eager, sizes) {
+    var p = P[i], s = size(i), full = "art/" + pad(i) + ".webp", half = "view/" + pad(i) + ".webp";
+    return "<img" + (p.v ? ' src="' + half + '" srcset="' + half + " " + p.v[0] + "w, " + full + " " + s[0] + 'w" sizes="' + (sizes || "(max-width: 860px) 94vw, 56vw") + '"' : ' src="' + full + '"') +
+      ' width="' + s[0] + '" height="' + s[1] + '" alt="' + esc(p.t) + '"' + (eager ? "" : ' loading="lazy"') + ' decoding="async">';
   }
   function plate(i) {
     var p = P[i];
@@ -58,12 +60,18 @@
   /* ---------- contents ---------- */
   function home() {
     var restored = P.filter(function (p) { return p.r && p.r[2].length; }).length, straight = P.filter(function (p) { return p.r && p.r[2].indexOf("straightened") >= 0; }).length;
-    var withArt = SC.scenes.filter(function (sc) { return sc.n && ART[sc.n].length; }).length;
+    var withArt = SC.scenes.filter(function (sc) { return sc.n && ART[sc.n].length; }).length, at = +store.get("dune.at") || 0;
+    var film = D.chapters.map(function (c, k) {
+      var cells = "";
+      for (var n = c.a; n <= c.b; n++) if (ART[n]) cells += '<a href="#scene-' + n + '"' + (ART[n].length ? ' class="has"' : "") + ' title="Scene ' + n + (ART[n].length ? ", has art" : ", script only") + '"><span>Scene ' + n + "</span></a>";
+      return '<div class="fm-ch"><b>' + roman[k] + "</b><div>" + cells + "</div></div>";
+    }).join("");
     return '<section class="hero gut"><div class="hero-text">' + CREDITS + '<p class="lede">The film Alejandro Jodorowsky prepared in the mid-1970s and never shot, told here from what survives of it: the early draft of the screenplay, and the drawings and paintings made for it.</p>' +
-      '<a class="btn solid" href="#ch-1">Begin</a></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true) + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
+      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
       '<section class="gut"><ol class="chapters">' + D.chapters.map(function (c, k) {
-        return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3) + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
+        return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3, "(max-width: 600px) 94vw, 320px") + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
       }).join("") + "</ol></section>" +
+      '<section class="film gut"><h2>The whole film</h2><p>One mark for each of the ' + (SC.scenes.length - 1) + " scenes, grouped by chapter. Gold has art, " + withArt + ' in all. The rest are told by the script alone.</p><div class="film-map">' + film + "</div></section>" +
       '<section class="notes gut"><h2>What you are looking at</h2><div class="notes-grid">' +
       "<div><h3>The words</h3><p>All " + (SC.scenes.length - 1) + " scenes of the early draft, as typed. Nothing inside a scene has been rewritten or summarised. The chapter titles and their one-line descriptions are this edition’s.</p></div>" +
       "<div><h3>The pictures</h3><p>Every picture comes from one 448-page file of scans gathered online. " + restored + " of them have been restored for this edition: uneven lighting flattened on the pencil sheets, " + straight + " photographed sheets straightened, and small scans enlarged four times by a neural upscaler.</p></div>" +
@@ -75,27 +83,31 @@
   }
 
   /* ---------- a chapter ---------- */
-  function sceneHtml(sc) {
-    var text = "", missing = [];
+  var FOLD = 14, KEEP = 8;
+  function sceneHtml(sc, open) {
+    var parts = [], missing = [];
     sc.b.forEach(function (b) {
-      if (b[0] === "a") text += "<p>" + esc(b[1]) + "</p>";
-      else if (b[0] === "d") text += '<p class="dlg"><b>' + esc(b[1]) + "</b><span>" + esc(b[2]) + "</span></p>";
-      else if (b[0] === "t") text += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
+      if (b[0] === "a") parts.push("<p>" + esc(b[1]) + "</p>");
+      else if (b[0] === "d") parts.push('<p class="dlg"><b>' + esc(b[1]) + "</b><span>" + esc(b[2]) + "</span></p>");
+      else if (b[0] === "t") parts.push('<p class="ttl">TITLE : ' + esc(b[1]) + "</p>");
       else if (b[0] === "i" && b[3] === null) missing.push(b[1]);
     });
+    var text = !open && parts.length > FOLD ? parts.slice(0, KEEP).join("") + '<div class="rest" hidden>' + parts.slice(KEEP).join("") +
+      '</div><button type="button" class="btn more" data-more>Read the rest of this scene · ' + (parts.length - KEEP) + " more</button>" : parts.join("");
     var ids = ART[sc.n], art = ids.map(plate).join("");
     if (missing.length) art += '<p class="lost"><b>In the typescript, not in the archive</b>' + missing.map(esc).join("<br>") + "</p>";
-    return '<article class="scene' + (ids.length ? "" : " bare") + '" id="sc-' + sc.n + '"><header><b>' + sc.n + "</b>" + (sc.h ? "<h3>" + esc(sc.h) + "</h3>" : "") +
+    return '<article class="scene' + (ids.length ? "" : " bare") + '" id="sc-' + sc.n + '" data-n="' + sc.n + '"><header><b>' + sc.n + "</b>" + (sc.h ? "<h3>" + esc(sc.h) + "</h3>" : "") +
       (ids.length ? "" : "<small>No art survives for this scene</small>") + '</header><div class="sc-text">' + text + "</div>" + (art ? '<div class="sc-art" data-ctx>' + art + "</div>" : "") + "</article>";
   }
   function chapter(k) {
-    var c = D.chapters[k], scenes = SC.scenes.filter(function (sc) { return sc.n >= c.a && sc.n <= c.b; });
+    var c = D.chapters[k], scenes = SC.scenes.filter(function (sc) { return sc.n >= c.a && sc.n <= c.b; }), openAll = store.get("dune.open") === "1";
     var map = scenes.map(function (sc) { return '<a href="#scene-' + sc.n + '"' + (ART[sc.n].length ? ' class="has"' : "") + ' title="Scene ' + sc.n + (sc.h ? ": " + esc(sc.h) : "") + '">' + sc.n + "</a>"; }).join("");
     var nav = '<nav class="ch-nav gut"><a class="btn" href="' + (k ? "#ch-" + k : "#home") + '">' + (k ? "← " + esc(D.chapters[k - 1].title) : "← Contents") + "</a>" +
       (k < D.chapters.length - 1 ? '<a class="btn solid" href="#ch-' + (k + 2) + '">' + esc(D.chapters[k + 1].title) + " →</a>" : '<a class="btn solid" href="#art">All the art →</a>') + "</nav>";
     return '<header class="ch-head gut"><span class="label">Chapter ' + roman[k] + " of X · scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</span><h1>" + esc(c.title) + '</h1><p class="lede">' + esc(c.text) + "</p>" +
-      '<div class="map" aria-label="Scenes in this chapter">' + map + '</div><p class="map-key"><i class="has"></i> has art <i></i> script only</p></header>' +
-      '<div class="scenes gut">' + scenes.map(sceneHtml).join("") + "</div>" + nav;
+      '<div class="map" aria-label="Scenes in this chapter">' + map + '</div><p class="map-key"><i class="has"></i> has art <i></i> script only' +
+      '<button type="button" class="link" data-fold>' + (openAll ? "Fold long scenes" : "Open every scene in full") + "</button></p></header>" +
+      '<div class="scenes gut">' + scenes.map(function (sc) { return sceneHtml(sc, openAll); }).join("") + "</div>" + nav;
   }
 
   /* ---------- all the art ---------- */
@@ -150,14 +162,66 @@
     if (b.dataset.v === "flip") { showOrig = !showOrig; show(cur); } else if (b.dataset.v === "close") closeView(); else step(b.dataset.v === "next" ? 1 : -1);
   });
 
+  /* ---------- whichever column is shorter stays in view ---------- */
+  function layout() {
+    var avail = window.innerHeight - 80, wide = window.innerWidth > 860;
+    var m = $$(".scene").map(function (el) { var t = $(".sc-text", el), a = $(".sc-art", el); return [el, t ? t.offsetHeight : 0, a && !el.classList.contains("bare") ? a.offsetHeight : 0]; });
+    m.forEach(function (x) {
+      x[0].classList.toggle("stick-art", wide && x[2] > 0 && x[2] <= avail && x[2] < x[1]);
+      x[0].classList.toggle("stick-text", wide && x[2] > 0 && x[1] <= avail && x[1] < x[2]);
+    });
+  }
+  function unfold(el) { var r = $(".rest", el), b = $("[data-more]", el); if (r) r.hidden = false; if (b) b.remove(); }
+  var watch = null;
+  function chapterReady() {
+    requestAnimationFrame(layout);
+    if (watch) watch.disconnect();
+    if (!("IntersectionObserver" in window)) return;
+    watch = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) store.set("dune.at", e.target.dataset.n); }); }, { rootMargin: "-30% 0px -60% 0px" });
+    $$(".scene").forEach(function (el) { watch.observe(el); });
+  }
+
+  /* ---------- search the screenplay ---------- */
+  var lastQ = "";
+  function mark(text, words) {
+    var re = new RegExp("(" + words.map(function (w) { return w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }).join("|") + ")", "gi");
+    return text.split(re).map(function (part, k) { return k % 2 ? "<mark>" + esc(part) + "</mark>" : esc(part); }).join("");
+  }
+  function find() {
+    return '<header class="ch-head gut"><span class="label">' + (SC.scenes.length - 1) + ' scenes</span><h1>Find</h1><p class="lede">Search the screenplay. Results quote the script’s own lines.</p>' +
+      '<input type="search" id="q" placeholder="worm, Jessica, spice" aria-label="Search the screenplay" autocomplete="off"><p class="map-key" id="q-n" aria-live="polite"></p></header><div class="results gut" id="results"></div>';
+  }
+  function findReady() {
+    var q = $("#q"), out = $("#results"), note = $("#q-n"), timer = 0;
+    var run = function () {
+      var words = q.value.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 1; }), html = "", count = 0; lastQ = q.value;
+      if (!words.length) { out.innerHTML = ""; note.textContent = "Type at least two letters."; return; }
+      SC.scenes.forEach(function (sc) {
+        if (!sc.n) return;
+        var lines = [];
+        sc.b.forEach(function (b) { if (b[0] === "a" || b[0] === "t") lines.push(b[1]); else if (b[0] === "d") lines.push(b[1] + " : " + b[2]); });
+        var all = (sc.h + " " + lines.join(" ")).toLowerCase();
+        if (!words.every(function (w) { return all.indexOf(w) >= 0; }) || ++count > 60) return;
+        var hits = lines.filter(function (l) { var low = l.toLowerCase(); return words.some(function (w) { return low.indexOf(w) >= 0; }); }).slice(0, 2).map(function (l) {
+          var low = l.toLowerCase(), at = Math.min.apply(null, words.map(function (w) { var x = low.indexOf(w); return x < 0 ? 1e9 : x; })), st = Math.max(0, at - 70);
+          return "<em>" + mark((st ? "…" : "") + l.slice(st, st + 230) + (l.length > st + 230 ? "…" : ""), words) + "</em>";
+        });
+        html += '<a class="hit" href="#scene-' + sc.n + '"><b>' + sc.n + "</b><span><strong>" + esc(sc.h || "Scene " + sc.n) + "</strong>" + hits.join("") + (ART[sc.n].length ? "<small>Has art</small>" : "") + "</span></a>";
+      });
+      out.innerHTML = html; note.textContent = count ? count + (count === 1 ? " scene" : " scenes") + (count > 60 ? ", first 60 shown" : "") : "Nothing in the script matches.";
+    };
+    q.value = lastQ; q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(run, 160); }); run(); q.focus();
+  }
+
   /* ---------- router ---------- */
   var main = $("#main"), rendered = "", back = "home";
   function render(id) {
     rendered = back = id;
     var m = /^ch-(\d+)$/.exec(id);
-    main.innerHTML = m ? chapter(+m[1] - 1) : id === "art" ? art() : home();
+    main.innerHTML = m ? chapter(+m[1] - 1) : id === "art" ? art() : id === "find" ? find() : home();
     $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : id)); });
     $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : "";
+    if (m) chapterReady(); else if (id === "find") findReady();
   }
   function route() {
     var h = location.hash.replace(/^#/, "") || "home", m;
@@ -167,18 +231,21 @@
       if (ctx.indexOf(i) < 0) ctx = [i];
       show(i); return;
     }
-    if (!view.hidden) { view.hidden = true; document.body.style.overflow = ""; cur = -1; if (h === rendered) return; }
+    if (!view.hidden) { view.hidden = true; document.body.style.overflow = ""; cur = -1; if (h === rendered || h === back) return; }
     if ((m = /^scene-(\d+)$/.exec(h))) {
-      var id = "ch-" + (chapterOf(+m[1]) + 1), fresh = rendered !== id; if (fresh) render(id); back = h;
-      var el = $("#sc-" + m[1]); if (el) el.scrollIntoView(); return;
+      var id = "ch-" + (chapterOf(+m[1]) + 1); if (rendered !== id) render(id); back = h;
+      var el = $("#sc-" + m[1]); if (el) { unfold(el); layout(); el.scrollIntoView(); } return;
     }
     if (h === "film") h = "ch-1";
-    if (!/^ch-(10|[1-9])$/.test(h) && h !== "art") h = "home";
+    if (!/^ch-(10|[1-9])$/.test(h) && h !== "art" && h !== "find") h = "home";
     if (h !== rendered) { render(h); window.scrollTo(0, 0); }
   }
   document.addEventListener("click", function (e) {
     var j = e.target.closest("[data-scroll]");
     if (j) { e.preventDefault(); var t = document.getElementById(j.dataset.scroll); if (t) t.scrollIntoView({ behavior: "smooth" }); return; }
+    var more = e.target.closest("[data-more]");
+    if (more) { unfold(more.closest(".scene")); layout(); return; }
+    if (e.target.closest("[data-fold]")) { store.set("dune.open", store.get("dune.open") === "1" ? "0" : "1"); var keep = rendered; rendered = ""; render(keep); return; }
     var a = e.target.closest("a.pl");
     if (a && a.dataset.i) { var box = a.closest("[data-ctx]"); showOrig = false; if (box) ctx = $$("a.pl[data-i]", box).map(function (x) { return +x.dataset.i; }); }
   });
@@ -186,6 +253,8 @@
     if (view.hidden) return;
     if (e.key === "Escape") closeView(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
   });
+  var rz = 0;
+  window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(layout, 150); });
   window.addEventListener("hashchange", route);
   route();
 })();
