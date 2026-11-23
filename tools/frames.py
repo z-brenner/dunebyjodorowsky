@@ -111,9 +111,18 @@ def main():
             if rough:                                                                    # its own lines were not found: keep the
                 l, t = int(PAD_X * S), int(PAD_Y * S); rt, b = l + S, t + int(FH * S)    # drawing, cut where the grid says it is
                 missing = []
-            inside = cv2.cvtColor(patch[t + 22:b - 22, l + 40:rt - 40], cv2.COLOR_RGB2GRAY).astype(np.float32)
-            # ink is darker than the paper right around it; a photograph's shading is not. One small mark counts.
-            drawn = inside.size > 0 and int((inside < cv2.blur(inside, (61, 61)) - 45).sum()) >= 60
+            inside = cv2.cvtColor(patch[t + 22:b - 22, l + 40:rt - 40], cv2.COLOR_RGB2GRAY)
+            # Ink is a thin mark darker than the paper on both sides of it. A black-hat filter keeps those and
+            # ignores a photograph's shading. One small mark is enough.
+            ink = cv2.morphologyEx(inside, cv2.MORPH_BLACKHAT, np.ones((17, 17), np.uint8)) > 45 if inside.size else np.zeros((1, 1), bool)
+            count = int(ink.sum())
+            if missing and count:
+                # Where the photograph cuts a frame off, its edge shows as a thin dark line. If nearly all the
+                # "ink" lies in one narrow band running along the cut side, it is that edge, not a drawing.
+                along = ink.sum(1 if missing[0] in ("top", "bottom") else 0)
+                band = int(np.convolve(along, np.ones(40, int), "same").max())
+                if band >= 0.85 * count: count -= band
+            drawn = count >= 60
             fw = rt - l; m = int(MARGIN * fw); cap = int((CAPTION - 0.01) * fw * (b - t) / (FH * fw))
             x0, x1, y0, y1 = l - m, rt + m, t - m, b + cap
             canvas = np.full((max(y1, ph) - min(y0, 0), max(x1, pw) - min(x0, 0), 3), 255, np.uint8)
