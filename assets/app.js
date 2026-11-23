@@ -184,7 +184,7 @@
       else if (b[0] === "t") text += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
     });
     var dims = sh.k ? D.frame : (p.v || size(sh.i));
-    var what = sh.k ? "Frame " + sh.k + " of " + p.f + ", cut from plate " + (sh.i + 1) + " and squared up by this edition" : KIND[p.room] + ", plate " + (sh.i + 1);
+    var what = sh.k ? "Frame " + sh.k + " of " + p.f + ", cut from plate " + (sh.i + 1) + " and squared up by this edition" + (p.fp && p.fp.indexOf(sh.k) >= 0 ? ". The photograph cuts this frame off" : "") : KIND[p.room] + ", plate " + (sh.i + 1);
     return '<div class="shot"><div class="shot-stage"><a class="pl" href="#plate-' + (sh.i + 1) + '" data-i="' + sh.i + '" title="See the whole plate"><img src="' + shotSrc(sh) + '" width="' + dims[0] + '" height="' + dims[1] + '" alt="' + esc(p.t) + '"></a>' +
       '<p class="shot-cap"><b>' + esc(p.t) + "</b>" + esc(what) + " · " + esc(D.credits[p.c] || "") + " · " + state(sh.i) + " · " + placing[p.by || "e"] + "</p>" +
       '<nav class="shot-nav"><a class="btn' + (n > 1 ? "" : " off") + '" href="#shot-' + Math.max(1, n - 1) + '" aria-label="Previous shot">←</a><span>Shot ' + n + " of " + SHOTS.length + '</span><a class="btn solid' + (n < SHOTS.length ? "" : " off") + '" href="#shot-' + Math.min(SHOTS.length, n + 1) + '" aria-label="Next shot">→</a></nav></div>' +
