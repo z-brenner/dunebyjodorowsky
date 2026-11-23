@@ -13,6 +13,9 @@ A frame the photograph cuts off is kept and recorded as partial. A drawn frame
 whose own lines cannot be found is still kept, cut where the grid says it is and
 recorded as estimated, so no drawing drops out of the sequence. A sheet is cut
 only if at least half its frames are found whole; otherwise it is left as a sheet.
+Sheets the grid cannot be fitted to (crops, strips, pasted-up collages) are searched
+for ruled frames one at a time. Those are written as close-ups; because that search
+can miss frames, such a sheet stays in the sequence whole, with its close-ups after it.
 Writes tools/frames.json. Needs numpy, opencv and Pillow.
 """
 import json, os, shutil, sys
@@ -30,6 +33,7 @@ FH = 1 / G.ASPECT                         # frame height, in frame widths
 PITCH = G.PITCH_Y / G.ASPECT              # row pitch, in frame widths
 CAPTION = PITCH - FH                      # caption strip height
 NOT_STANDARD = {400}                      # checked by eye: a pasted-up strip of frames with no caption rows
+NO_DETAILS = {215}                        # checked by eye: a hand-inked redraw with a fold across it; its cuts come out tilted
 NO_ESTIMATES = {91}                       # checked by eye: the bottom row is one wide box holding a typed colour legend, not frames
 
 
@@ -139,7 +143,32 @@ def main():
             if p: partial.setdefault(str(i), []).append(n)
             if rg: estimated.setdefault(str(i), []).append(n)
         log[str(i)] = len(keep)
-    json.dump(dict(w=W, h=Hh, n=log, partial=partial, estimated=estimated), open(os.path.join(ROOT, "tools", "frames.json"), "w"), separators=(",", ":"))
+    # Sheets the grid could not be fitted to: find ruled frames one at a time and cut each as a
+    # close-up. This can miss frames, so these sheets stay in the sequence whole and the close-ups
+    # follow them; nothing is dropped.
+    details = {}
+    fw = W / (1 + 2 * MARGIN); x0, y0 = MARGIN * fw, MARGIN * fw; x1, y1 = x0 + fw, y0 + fw * FH
+    dst = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], np.float32)
+    for i in sorted(left_whole):
+        if i in NO_DETAILS: continue
+        rgb = np.array(Image.open(os.path.join(ROOT, "art", "%03d.webp" % i)).convert("RGB"))
+        qs = G.quads(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)); keep = []
+        for q in qs:
+            M = cv2.getPerspectiveTransform(q.astype(np.float32), dst)
+            img = cv2.warpPerspective(rgb, M, (W, Hh), flags=cv2.INTER_AREA if np.linalg.norm(q[1] - q[0]) > fw else cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(255, 255, 255))
+            inside = cv2.cvtColor(img[int(y0) + 20:int(y1) - 20, int(x0) + 34:int(x1) - 34], cv2.COLOR_RGB2GRAY)
+            if int((cv2.morphologyEx(inside, cv2.MORPH_BLACKHAT, np.ones((15, 15), np.uint8)) > 45).sum()) < 60: continue   # nobody drew in it
+            for o in qs:                                                                  # pasted-up sheets have no caption rows:
+                if o is q: continue                                                       # do not show the next frame as a caption
+                t = G.apply(M, o[:2])
+                if y1 + 4 < t[:, 1].mean() < Hh and t[:, 0].max() > x0 and t[:, 0].min() < x1: img[int(y1) + int(MARGIN * fw):] = 255; break
+            keep.append(img)
+        if len(keep) < 2: continue
+        for n, img in enumerate(keep, 1):
+            Image.fromarray(img).save(os.path.join(out_dir, "%03d-%02d.webp" % (i, n)), "WEBP", quality=78, method=5)
+        details[str(i)] = len(keep)
+    print("close-ups: %d on %d sheets" % (sum(details.values()), len(details)), details)
+    json.dump(dict(w=W, h=Hh, n=log, partial=partial, estimated=estimated, details=details), open(os.path.join(ROOT, "tools", "frames.json"), "w"), separators=(",", ":"))
     print("sheets cut: %d | frames: %d (%d partial, %d estimated) | each %d x %d" % (len(log), sum(log.values()), sum(len(v) for v in partial.values()), sum(len(v) for v in estimated.values()), W, Hh))
     print("left whole:", left_whole)
 

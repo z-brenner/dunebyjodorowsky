@@ -105,6 +105,7 @@ def main():
         if str(i) in cut["n"]: p["f"] = cut["n"][str(i)]
         if str(i) in cut.get("partial", {}): p["fp"] = cut["partial"][str(i)]
         if str(i) in cut.get("estimated", {}): p["fe"] = cut["estimated"][str(i)]
+        if str(i) in cut.get("details", {}): p["fd"] = cut["details"][str(i)]
         if i in placed: p["by"] = placed[i]
         plates.append(p)
 

@@ -43,7 +43,12 @@
     (ART[sc.n] || []).forEach(function (i) {
       if (!IN_REEL[P[i].room]) return;
       if (FIRST_SHOT[sc.n] === undefined) FIRST_SHOT[sc.n] = SHOTS.length + 1;
-      if (P[i].f) for (var k = 1; k <= P[i].f; k++) SHOTS.push({ i: i, k: k, sc: sc.n }); else SHOTS.push({ i: i, k: 0, sc: sc.n });
+      var k;
+      if (P[i].f) for (k = 1; k <= P[i].f; k++) SHOTS.push({ i: i, k: k, sc: sc.n });
+      else {
+        SHOTS.push({ i: i, k: 0, sc: sc.n });                                  /* the whole sheet first, so nothing is lost */
+        for (k = 1; k <= (P[i].fd || 0); k++) SHOTS.push({ i: i, k: k, sc: sc.n, d: 1 });
+      }
     });
   });
   var sceneBy = {}; SC.scenes.forEach(function (sc) { sceneBy[sc.n] = sc; });
@@ -88,7 +93,8 @@
       "<div><h3>The pictures</h3><p>Every picture comes from one 448-page file of scans gathered online. " + restored + " of them have been restored for this edition: uneven lighting flattened on the pencil sheets, " + straight + " photographed sheets straightened, and small scans enlarged four times by a neural upscaler.</p></div>" +
       "<div><h3>What restoring changes</h3><p>Upscaling invents detail. The fine texture in a restored plate was made by a machine guessing from a small scan, and tiny typed captions do not become readable. Each plate says whether it is restored, and the viewer shows the untouched scan on request.</p></div>" +
       "<div><h3>Where pictures sit</h3><p>Some pictures are placed by the screenplay’s own list of illustrations. The rest, including all the storyboard, are placed by this edition from sequence numbers and captions. Each plate says which. The storyboard is a later version of the film than this draft, so the fit is loose.</p></div>" +
-      "<div><h3>Shot by shot</h3><p>" + SHOTS.length + " shots in story order: storyboard frames and the screenplay’s pictures, each beside its scene. Where a sheet’s printed grid could be found, software cut the sheet into its frames and squared each one up. Sheets it could not read are shown whole.</p></div>" +
+      "<div><h3>Shot by shot</h3><p>" + SHOTS.length + " shots in story order: storyboard frames and the screenplay’s pictures, each beside its scene. Where a sheet’s printed grid could be found, software cut the sheet into its frames and squared each one up. On other sheets it found what frames it could; those sheets are shown whole first, then the frames as close-ups.</p></div>" +
+      "<div><h3>The sound</h3><p>Off until you press Sound. It is generated in your browser as you read: a low drone, wind and a few bell notes, in a different mood for each chapter. It is not a recording and not music made for the film; this edition wrote it.</p></div>" +
       "<div><h3>The gaps</h3><p>" + withArt + " of the " + (SC.scenes.length - 1) + " scenes have art. Nothing was drawn to fill the others. Where no picture survives, the scene is told by the script alone and says so.</p></div>" +
       "<div><h3>Whose work it is</h3><p>Jean Giraud (Moebius), Chris Foss, H.R. Giger and Alejandro Jodorowsky. It remains theirs and their estates’. This is an unofficial study edition.</p></div>" +
       '</div><p class="more"><a class="btn" href="#art">See all the art</a></p></section>';
@@ -184,7 +190,8 @@
       else if (b[0] === "t") text += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
     });
     var dims = sh.k ? D.frame : (p.v || size(sh.i));
-    var what = sh.k ? "Frame " + sh.k + " of " + p.f + ", cut from plate " + (sh.i + 1) + " and squared up by this edition" + (p.fp && p.fp.indexOf(sh.k) >= 0 ? ". The photograph cuts this frame off" : "") + (p.fe && p.fe.indexOf(sh.k) >= 0 ? ". Its ruled lines could not be found, so the cut is an estimate and may be off-centre" : "") : KIND[p.room] + ", plate " + (sh.i + 1);
+    var what = sh.d ? "Close-up " + sh.k + " of " + p.fd + " from plate " + (sh.i + 1) + ", found and squared up by software. The whole sheet comes just before these; the software may have missed frames on it"
+      : sh.k ? "Frame " + sh.k + " of " + p.f + ", cut from plate " + (sh.i + 1) + " and squared up by this edition" + (p.fp && p.fp.indexOf(sh.k) >= 0 ? ". The photograph cuts this frame off" : "") + (p.fe && p.fe.indexOf(sh.k) >= 0 ? ". Its ruled lines could not be found, so the cut is an estimate and may be off-centre" : "") : KIND[p.room] + ", plate " + (sh.i + 1);
     return '<div class="shot"><div class="shot-stage"><a class="pl" href="#plate-' + (sh.i + 1) + '" data-i="' + sh.i + '" title="See the whole plate"><img src="' + shotSrc(sh) + '" width="' + dims[0] + '" height="' + dims[1] + '" alt="' + esc(p.t) + '"></a>' +
       '<p class="shot-cap"><b>' + esc(p.t) + "</b>" + esc(what) + " · " + esc(D.credits[p.c] || "") + " · " + state(sh.i) + " · " + placing[p.by || "e"] + "</p>" +
       '<nav class="shot-nav"><a class="btn' + (n > 1 ? "" : " off") + '" href="#shot-' + Math.max(1, n - 1) + '" aria-label="Previous shot">←</a><span>Shot ' + n + " of " + SHOTS.length + '</span><a class="btn solid' + (n < SHOTS.length ? "" : " off") + '" href="#shot-' + Math.min(SHOTS.length, n + 1) + '" aria-label="Next shot">→</a></nav></div>' +
@@ -243,6 +250,19 @@
     q.value = lastQ; q.addEventListener("input", function () { clearTimeout(timer); timer = setTimeout(run, 160); }); run(); q.focus();
   }
 
+  /* ---------- sound: a generated score, off until asked for ---------- */
+  var score = window.DuneScore, snd = $("#snd");
+  function moodFor(id) { var m = /^ch-(\d+)$/.exec(id), s = /^shot-(\d+)$/.exec(id); return m ? +m[1] - 1 : s ? chapterOf(SHOTS[+s[1] - 1].sc) : -1; }
+  if (score && score.supported && snd) {
+    snd.hidden = false;
+    var setSound = function (want) { var is = score.playing(); if (want !== is) is = score.toggle(); snd.setAttribute("aria-pressed", String(is)); snd.textContent = is ? "Sound on" : "Sound"; return is; };
+    snd.addEventListener("click", function () { store.set("dune.sound", setSound(!score.playing()) ? "1" : "0"); });
+    if (store.get("dune.sound") === "1") {                                  /* browsers only allow sound after a click or key press */
+      var wake = function (e) { document.removeEventListener("pointerdown", wake); document.removeEventListener("keydown", wake); if (!e.target.closest || !e.target.closest("#snd")) setSound(true); };
+      document.addEventListener("pointerdown", wake); document.addEventListener("keydown", wake);
+    }
+  }
+
   /* ---------- router ---------- */
   var main = $("#main"), rendered = "", back = "home";
   function render(id) {
@@ -252,6 +272,7 @@
     main.innerHTML = m ? chapter(+m[1] - 1) : sm ? shot(+sm[1]) : id === "art" ? art() : id === "find" ? find() : home();
     $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : sm ? "shots" : id)); });
     $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : sm ? "Shot " + sm[1] + " of " + SHOTS.length : "";
+    if (score) score.setMood(moodFor(id));
     if (m) chapterReady(); else if (id === "find") findReady(); else if (sm) { shotReady(+sm[1]); if (keep) $(".shot-side").scrollTop = keep; }
   }
   function route() {

@@ -163,3 +163,49 @@ def locate(gray):
     inside = [(c, r) for c in range(cols[0], cols[-1] + 1) for r in range(rows[0], rows[-1] + 1)]
     if sum(1 for k in inside if k in have) < 0.7 * len(inside): return None
     return H, cells, fr
+
+
+def quads(gray, work=1600):
+    """Ruled frames found one at a time, with no grid: [quad] in reading order, in image pixels.
+
+    For sheets the grid cannot be fitted to (crops, strips, pasted-up collages). Each dark
+    connected shape's convex hull is tested: it must be a four-sided figure with a frame's
+    proportions whose four sides all follow a dark line. It can miss frames, so callers must
+    not treat the result as the whole sheet."""
+    f = work / gray.shape[1]
+    g = cv2.resize(gray, (work, int(round(gray.shape[0] * f))), interpolation=cv2.INTER_AREA if f < 1 else cv2.INTER_CUBIC)
+    h, w = g.shape; lo, paper = edges(g); found = []
+    for block, c, grow in ((41, 8, 3), (41, 14, 3), (81, 10, 5), (25, 6, 1)):
+        thr = cv2.adaptiveThreshold(cv2.GaussianBlur(g, (3, 3), 0), 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, block, c)
+        if grow > 1: thr = cv2.dilate(thr, np.ones((grow, grow), np.uint8))
+        for cnt in cv2.findContours(thr, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[0]:
+            if cv2.contourArea(cnt) < 0.004 * h * w: continue
+            hull = cv2.convexHull(cnt); area = cv2.contourArea(hull)
+            if area > 0.6 * h * w: continue
+            for eps in (0.015, 0.025, 0.04):
+                q = cv2.approxPolyDP(hull, eps * cv2.arcLength(hull, True), True)
+                if len(q) == 4: break
+            else: continue
+            if not 0.93 < area / max(cv2.contourArea(q), 1) < 1.07: continue
+            q = order(q); ww = (np.linalg.norm(q[1] - q[0]) + np.linalg.norm(q[2] - q[3])) / 2; hh = (np.linalg.norm(q[3] - q[0]) + np.linalg.norm(q[2] - q[1])) / 2
+            if hh < 20 or not 2.0 < ww / hh < 2.75: continue
+            top, bot, lef, rig = (np.linalg.norm(q[1] - q[0]), np.linalg.norm(q[2] - q[3]), np.linalg.norm(q[3] - q[0]), np.linalg.norm(q[2] - q[1]))
+            if abs(top - bot) > 0.12 * ww or abs(lef - rig) > 0.15 * hh: continue        # not a rectangle seen nearly square-on
+            def angle(a, b, c):
+                u, v = a - b, c - b; return np.degrees(np.arccos(np.clip(u @ v / (np.linalg.norm(u) * np.linalg.norm(v)), -1, 1)))
+            if any(abs(angle(q[k - 1], q[k], q[(k + 1) % 4]) - 90) > 12 for k in range(4)): continue
+            if not ruled(lo, paper, q): continue
+            c0 = q.mean(0)
+            if any(np.linalg.norm(c0 - o.mean(0)) < 0.3 * hh for o in found): continue
+            found.append(q)
+    if found:                                                                          # frames on one sheet are one size
+        mid = float(np.median([np.linalg.norm(q[1] - q[0]) for q in found]))
+        found = [q for q in found if 0.7 * mid < np.linalg.norm(q[1] - q[0]) < 1.4 * mid]
+    if not found: return []
+    hh = float(np.median([np.linalg.norm(q[3] - q[0]) for q in found]))
+    found.sort(key=lambda q: q.mean(0)[1]); rows, cur = [], [found[0]]
+    for q in found[1:]:
+        if q.mean(0)[1] - cur[-1].mean(0)[1] < 0.5 * hh: cur.append(q)
+        else: rows.append(cur); cur = [q]
+    rows.append(cur)
+    return [q / f for row in rows for q in sorted(row, key=lambda q: q.mean(0)[0])]
