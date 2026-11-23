@@ -63,14 +63,14 @@
     tone.frequency.setTargetAtTime(m.bright, t, tau); lfoDepth.gain.setTargetAtTime(m.bright * 0.35, t, tau);
   }
   function gust() {
-    if (!playing) return;
+    if (!playing || ctx.state !== "running") return;
     var m = mood || REST, t = ctx.currentTime;
     windBand.frequency.setTargetAtTime(280 + Math.random() * 900, t, 2.5);
     windLevel.gain.setTargetAtTime(m.wind * (0.05 + Math.random() * 0.13), t, 2);
     windTimer = setTimeout(gust, 2500 + Math.random() * 4000);
   }
   function bell() {
-    if (!playing) return;
+    if (!playing || ctx.state !== "running") return;
     var m = mood || REST, t = ctx.currentTime + 0.05;
     var step = m.scale[Math.floor(Math.random() * m.scale.length)] + 12 * (2 + Math.floor(Math.random() * 2));
     var f = m.root * Math.pow(2, step / 12), length = 4 + Math.random() * 4, loud = 0.05 + Math.random() * 0.06;
@@ -81,24 +81,27 @@
     });
     bellTimer = setTimeout(bell, m.every * (0.5 + Math.random()) * 1000);
   }
+  /* The wind and the bells run on timers. They must stop whenever the audio clock stops, or
+     every note scheduled meanwhile lands on the same frozen instant and rings at once later. */
+  function rest() { clearTimeout(bellTimer); clearTimeout(windTimer); }
+  function wake() { rest(); if (!playing || document.hidden || ctx.state !== "running") return; gust(); bellTimer = setTimeout(bell, 2500); }
   function start() {
     if (!AC) return false;
     if (!ctx) build();
-    if (ctx.state === "suspended") ctx.resume();
     playing = true; apply(0.3);
     master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0.6, ctx.currentTime, 1.4);
-    clearTimeout(bellTimer); clearTimeout(windTimer); gust(); bellTimer = setTimeout(bell, 2500);
+    if (ctx.state === "running") wake(); else if (!document.hidden) ctx.resume().then(wake);
     return true;
   }
   function stop() {
     if (!ctx) return;
-    playing = false; clearTimeout(bellTimer); clearTimeout(windTimer);
+    playing = false; rest();
     master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
     setTimeout(function () { if (!playing && ctx.state === "running") ctx.suspend(); }, 2500);
   }
   document.addEventListener("visibilitychange", function () {             /* do not play to a hidden tab */
     if (!ctx || !playing) return;
-    if (document.hidden) ctx.suspend(); else ctx.resume();
+    if (document.hidden) { rest(); ctx.suspend(); } else ctx.resume().then(wake);
   });
 
   window.DuneScore = {
