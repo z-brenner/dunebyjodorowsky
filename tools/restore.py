@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Restore the plates: straighten photographed storyboard sheets, even out the
-lighting on line art, and upscale with a neural model.
+"""Restore the plates: straighten photographed storyboard sheets (tools/grid.py),
+even out the lighting on line art, and upscale with a neural model.
 
     python3 tools/restore.py MODEL.pth [first last]
 
@@ -12,107 +12,24 @@ import json, os, sys
 import cv2, numpy as np, torch
 from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import catalog as C, sr
+import catalog as C, grid, sr
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LINE_ART = {"board", "frame", "lineup"}       # paper-white drawings: lighting is evened
 LONG_SIDE = 2200                               # restored plates are at most this long
-NO_STRAIGHTEN = {212, 261}                    # checked by eye: straightening made these worse
-
-
-def order(q):
-    q = q.reshape(4, 2).astype(np.float32); s = q.sum(1); d = q[:, 0] - q[:, 1]
-    return np.array([q[s.argmin()], q[d.argmax()], q[s.argmax()], q[d.argmin()]], np.float32)  # tl tr br bl
-
-
-def panels(gray):
-    """Find the ruled storyboard frames as quadrilaterals."""
-    h, w = gray.shape
-    bs = max(15, (w // 40) | 1)
-    thr = cv2.adaptiveThreshold(cv2.GaussianBlur(gray, (3, 3), 0), 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, bs, 8)
-    thr = cv2.dilate(thr, np.ones((3, 3), np.uint8))
-    cnts, _ = cv2.findContours(thr, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    out = []
-    for c in cnts:
-        a = cv2.contourArea(c)
-        if a < 0.012 * h * w or a > 0.2 * h * w: continue
-        p = cv2.approxPolyDP(c, 0.02 * cv2.arcLength(c, True), True)
-        if len(p) != 4 or not cv2.isContourConvex(p): continue
-        q = order(p); ww = (np.linalg.norm(q[1] - q[0]) + np.linalg.norm(q[2] - q[3])) / 2
-        hh = (np.linalg.norm(q[3] - q[0]) + np.linalg.norm(q[2] - q[1])) / 2
-        if hh < 1 or not 1.4 < ww / hh < 3.6: continue
-        c0 = q.mean(0)
-        if any(np.linalg.norm(c0 - o.mean(0)) < 0.25 * hh for o in out): continue   # inner/outer edge of one frame
-        out.append(q)
-    return out
-
-
-def fit(pos, slope, span):
-    """Slope as a linear function of position, with outliers dropped. Falls back to a constant."""
-    pos, slope = np.asarray(pos, float), np.asarray(slope, float)
-    keep = np.abs(slope - np.median(slope)) < 0.12
-    pos, slope = pos[keep], slope[keep]
-    if len(pos) < 8 or np.ptp(pos) < 0.35 * span: return float(np.median(slope)), 0.0
-    for _ in range(2):
-        b, a = np.polyfit(pos, slope, 1); r = slope - (a + b * pos); ok = np.abs(r) <= 2.5 * (r.std() + 1e-6)
-        if ok.all() or ok.sum() < 8: break
-        pos, slope = pos[ok], slope[ok]
-    return float(a), float(b)
-
-
-def skew(rgb):
-    """How far the ruled frames are from level and upright (0 is perfect), and how many were found."""
-    qs = panels(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY))
-    if len(qs) < 4: return None, len(qs)
-    e = []
-    for q in qs:
-        e += [abs((q[1][1] - q[0][1]) / (q[1][0] - q[0][0])), abs((q[2][1] - q[3][1]) / (q[2][0] - q[3][0])),
-              abs((q[3][0] - q[0][0]) / (q[3][1] - q[0][1])), abs((q[2][0] - q[1][0]) / (q[2][1] - q[1][1]))]
-    return float(np.mean(e)), len(qs)
+NO_STRAIGHTEN = set()                          # plates where straightening was checked by eye and rejected
 
 
 def straighten(rgb):
-    """Straighten, then keep the result only if the frames really did get squarer."""
-    if np.percentile(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), 60) >= 236: return rgb, False   # a flat scan, not a photograph
-    before, n0 = skew(rgb)
-    if before is None or before < 0.03: return rgb, False
-    out, ok = _straighten(rgb)
-    if not ok: return rgb, False
-    after, n1 = skew(out)
-    if after is None or n1 < 0.7 * n0 or after > 0.65 * before: return rgb, False
-    return out, True
+    """Undo the camera's view of a photographed sheet, using the book's printed grid of frames.
 
-
-def _straighten(rgb):
-    """Undo camera tilt and perspective, using the ruled frames' own edges.
-
-    Horizontal frame edges should be level and vertical ones upright. The slope of
-    each family is fitted as a function of position, which gives the four sides of
-    the sheet as the camera saw it; those are then mapped to a rectangle. Nothing
-    is cropped. Returns (image, done)."""
-    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY); h, w = gray.shape
-    qs = panels(gray)
-    if len(qs) < 4: return rgb, False
-    xc, yc = w / 2, h / 2; hp, hs, vp, vs = [], [], [], []
-    for q in qs:
-        for p0, p1 in ((q[0], q[1]), (q[3], q[2])):
-            m = (p1[1] - p0[1]) / (p1[0] - p0[0]); hs.append(m); hp.append(p0[1] + m * (xc - p0[0]))
-        for p0, p1 in ((q[0], q[3]), (q[1], q[2])):
-            n = (p1[0] - p0[0]) / (p1[1] - p0[1]); vs.append(n); vp.append(p0[0] + n * (yc - p0[1]))
-    a, b = fit(hp, hs, h); c, d = fit(vp, vs, w)
-    mt, mb, nl, nr = a, a + b * h, c, c + d * w
-    yt, yb = -abs(mt) * xc, h + abs(mb) * xc; xl, xr = -abs(nl) * yc, w + abs(nr) * yc
-    def cross(y0, m, x0, n):             # y = y0 + m (x - xc)  meets  x = x0 + n (y - yc)
-        y = (y0 + m * (x0 - n * yc - xc)) / (1 - m * n); return [x0 + n * (y - yc), y]
-    src = np.array([cross(yt, mt, xl, nl), cross(yt, mt, xr, nr), cross(yb, mb, xr, nr), cross(yb, mb, xl, nl)], np.float32)
-    box = np.array([[0, 0], [w, 0], [w, h], [0, h]], np.float32)
-    if np.abs(src - box).max() < 0.012 * max(w, h): return rgb, False      # already square to the camera
-    if np.abs(src - box).max() > 0.45 * max(w, h): return rgb, False       # the fit is not believable
-    W = int(round((np.linalg.norm(src[1] - src[0]) + np.linalg.norm(src[2] - src[3])) / 2))
-    Hh = int(round((np.linalg.norm(src[3] - src[0]) + np.linalg.norm(src[2] - src[1])) / 2))
-    M = cv2.getPerspectiveTransform(src, np.array([[0, 0], [W, 0], [W, Hh], [0, Hh]], np.float32))
-    paper = int(np.percentile(gray, 80))
-    return cv2.warpPerspective(rgb, M, (W, Hh), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=(paper,) * 3), True
+    Flat scans are left alone, and so is any sheet whose grid cannot be found and
+    confirmed (see grid.locate). Nothing is cropped. Returns (image, done)."""
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    if np.percentile(gray, 60) >= 236: return rgb, False      # a flat scan, not a photograph
+    found = grid.locate(gray)
+    if found is None: return rgb, False
+    return grid.rectify(rgb, found[0], found[1])
 
 
 def even_light(rgb):
