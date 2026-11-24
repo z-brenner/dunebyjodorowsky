@@ -90,6 +90,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .watch h1 { font-size: clamp(36px, 5vw, 64px); color: var(--foil); }
 .watch video { width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); display: block; }
 .watch-cap { font: 400 12.5px/1.5 var(--f-type); color: var(--paper-dim); }
+.film-index { display: flex; flex-wrap: wrap; gap: 8px; }
+.film-index .btn { display: grid; gap: 5px; text-align: left; padding: 11px 14px; }
+.film-index .btn small { font: 400 10.5px var(--f-type); letter-spacing: .08em; opacity: .7; }
 .film-item { display: grid; gap: 12px; padding-top: 30px; margin-top: 12px; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--bar-h) + 8px); }
 .film-item h2 { font-size: clamp(28px, 3.4vw, 44px); }
 .film-text { font-size: 16.5px; line-height: 1.5; max-width: 70ch; }

@@ -288,6 +288,12 @@
     { id: "opening", title: "The opening shot", len: "1 min 52 s", from: "Sequence 1, “un seul plan séquence / one continuous shot”", plate: 125, link: "See the 24 frames one by one",
       text: "The storyboard draws the film’s opening as one unbroken shot across the galaxy, in 24 frames. This is that shot, moving: the camera travels into each drawing and the next one surfaces where the storyboard says it should.",
       how: "In most frames the storyboard rules a small rectangle to show where the camera goes next; the film pushes into that rectangle while the next drawing fades up inside it. Eight frames carry no rectangle, and there the path into the next frame is this edition’s reading. The captions are the storyboard’s own English lines." },
+    { id: "museum", title: "The Museum of Man", len: "3 min 11 s", from: "Scenes 1 to 9 of the screenplay", scene: 1, link: "Read from scene 1",
+      text: "A ship crosses the galaxy and lands in a dead city. Twelve dog-beings walk into a steel temple, find a crucified man at the end of an empty hall, and discover that he is a projector.",
+      how: "The pictures are the illustrated screenplay’s own, each shown at the scene the typescript calls for it, in colour as drawn. The typescript’s pictures for scenes 2 to 5 are not in the archive, so those scenes appear as words on black. The ship is scene 1’s picture, shown under scene 3’s line." },
+    { id: "history", title: "The history of man", len: "3 min 6 s", from: "Scenes 10 to 14 of the screenplay", scene: 10, link: "Read from scene 10",
+      text: "What the robot projects: the Earth destroyed, the galaxy conquered, the machines doing everything, and the revolt against them.",
+      how: "Three of the five scenes have their picture; the typescript’s pictures for scenes 12 and 14 are not in the archive, so the wall at the edge of the galaxy and the revolt against the machines appear as words on black. The picture of the exploding Earth is also shown under the first lines of scene 11." },
     { id: "harkonnen", title: "The Harkonnen castle", len: "1 min 47 s", from: "Scenes 39 and 40 of the screenplay", scene: 39, link: "Read the two scenes",
       text: "The approach to the castle, and Peter and Feyd at chess on its balcony. The words are the screenplay’s; the pictures are the storyboard’s, with one drawing from the illustrated screenplay.",
       how: "Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s. The pan up the castle and the push toward its head follow camera notes written on the drawing. Three of the frames survive only as a small scan and look soft." },
@@ -301,6 +307,7 @@
   function watchPage() {
     return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>Watch</h1>' +
       '<p class="lede">Pieces of the film, made from what survives of it: the production’s own drawings set in motion under the screenplay’s own words. No film was shot, and nothing here was drawn or generated to fill a gap.</p>' +
+      '<p class="film-index">' + FILMS.map(function (f) { return '<a class="btn" href="#watch" data-scroll="film-' + f.id + '">' + esc(f.title) + "<small>" + f.len + "</small></a>"; }).join("") + "</p>" +
       FILMS.map(function (f) {
         return '<article class="film-item" id="film-' + f.id + '"><h2>' + esc(f.title) + '</h2><p class="film-text">' + f.text + "</p>" +
           '<video controls playsinline preload="metadata" poster="film/' + f.id + '.jpg" src="film/' + f.id + '.mp4"></video>' +
