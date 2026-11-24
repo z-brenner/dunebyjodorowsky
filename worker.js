@@ -14,7 +14,12 @@ export default {
     const out = new Headers(full.headers);
     if (full.status === 200) out.set("Accept-Ranges", "bytes");
     const m = range && /^bytes=(\d*)-(\d*)$/.exec(range.trim());
-    if (full.status !== 200 || !m || (m[1] === "" && m[2] === "")) {
+    /* If-Range: the client holds part of some version of the file. If that is not this version, it must get
+       the whole file, or it would join pieces of two different films. Only an exact match counts. */
+    const held = request.headers.get("If-Range");
+    const same = !held || (held.startsWith('"') ? held === full.headers.get("ETag")
+      : !held.startsWith("W/") && full.headers.has("Last-Modified") && Date.parse(held) === Date.parse(full.headers.get("Last-Modified")));
+    if (full.status !== 200 || !m || !same || (m[1] === "" && m[2] === "")) {
       return new Response(request.method === "HEAD" ? null : full.body, { status: full.status, headers: out });
     }
 
