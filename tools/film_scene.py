@@ -8,7 +8,7 @@ screen. Nothing here is footage, and nothing is drawn or generated.
 Every line of script in an edit list is checked against assets/script.js before anything is
 rendered: if it is not word for word in the scene it claims to come from, the build stops.
 
-usage: film_scene.py <name> <fonts dir> <out dir> [--preview | --stills]
+usage: film_scene.py <name> <fonts dir> <out dir> [--preview | --stills | --cues]
 """
 import json, math, os, re, subprocess, sys
 import numpy as np, cv2
@@ -36,6 +36,9 @@ LIMIT = 25 * 1024 * 1024                  # the host serves no file larger than 
 #   lines   [(speaker or None, text)]  words of the screenplay, unaltered.
 #           'SCENE' marks a slate. 'BOARD' marks a caption printed on the storyboard, not the script.
 #           ('NUM', n) shows nothing itself: from here on, the label above the picture names scene n.
+# A film's 'score' says how the music moves: {shot number: intensity} or {shot number: (intensity, accent)}
+# or (intensity, accent, seconds into the shot). Intensity runs from 0, hushed, to 1, full; it holds until the
+# next entry. An accent is 'hit', 'swell' or 'drop'. --cues writes these as times for tools/record_score.js.
 #   T(scene, k) fetches block k of a scene from assets/script.js, so long passages are not retyped;
 #   T(scene, k, a, b) fetches its sentences a to b. J(...) joins fetched pieces into one line.
 F, C = 'frame', 'closeup'
@@ -66,7 +69,7 @@ P48, P44, P11 = ('plate', 47, (.028, .04, .971, .964)), ('plate', 43, (.033, .03
 ALONE = ('text',)
 EDITS = {
     'harkonnen': {
-        'title': 'THE HARKONNEN CASTLE', 'sub': 'scenes 39 and 40, from the screenplay and the storyboard', 'mood': 3, 'scenes': [39, 40],
+        'title': 'THE HARKONNEN CASTLE', 'score': {0: .35, 1: .5, 2: (.6, 'hit'), 3: .5, 4: .4, 6: .45, 7: .55, 8: (.5, 'swell'), 9: .4, 11: .6, 12: .65}, 'sub': 'scenes 39 and 40, from the screenplay and the storyboard', 'mood': 3, 'scenes': [39, 40],
         'pictures': ['The pictures are the production’s: the storyboard by Jean Giraud (Moebius),', 'and one drawing from the illustrated screenplay, artist uncredited in the source.'],
         'end': ['Scenes 39 and 40 of the early draft. Plates 28, 284, 26, 50, 140, 443 and 90.',
                 'Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s.',
@@ -97,7 +100,7 @@ EDITS = {
         ],
     },
     'museum': {
-        'title': 'THE MUSEUM OF MAN', 'sub': 'scenes 1 to 9, from the screenplay and its own pictures', 'mood': 0, 'scenes': list(range(1, 10)),
+        'title': 'THE MUSEUM OF MAN', 'score': {0: (.3, 'swell'), 1: .2, 2: .35, 3: .2, 5: .35, 6: .4, 8: (.3, 'drop'), 9: .4, 10: .45, 11: (.6, 'hit'), 12: .65, 13: .6, 14: .45, 15: .5, 17: (.65, 'swell'), 18: (.75, 'hit', 6.5)}, 'sub': 'scenes 1 to 9, from the screenplay and its own pictures', 'mood': 0, 'scenes': list(range(1, 10)),
         'pictures': ['The pictures are the illustrated screenplay\u2019s own. Their artist is not credited in the source.'],
         'end': ['Scenes 1 to 9 of the early draft. Plates 194, 45, 40, 8, 42, 18 and 43.',
                 'Each picture is the one the typescript calls for at that scene, except plate 45, the ship: it belongs to scene 1 and is shown under scene 3.',
@@ -126,7 +129,7 @@ EDITS = {
         ],
     },
     'history': {
-        'title': 'THE HISTORY OF MAN', 'sub': 'scenes 10 to 14: what the robot projects', 'mood': 0, 'scenes': list(range(10, 15)),
+        'title': 'THE HISTORY OF MAN', 'score': {0: (.7, 'hit'), 1: .6, 2: .5, 4: .7, 5: .55, 6: (.25, 'drop'), 8: .4, 10: .45, 11: .4, 12: .55, 13: .6, 14: (.65, 'hit', 9)}, 'sub': 'scenes 10 to 14: what the robot projects', 'mood': 0, 'scenes': list(range(10, 15)),
         'pictures': ['The pictures are the illustrated screenplay\u2019s own. Their artist is not credited in the source.'],
         'end': ['Scenes 10 to 14 of the early draft. Plates 48, 44 and 11.',
                 'Each picture is the one the typescript calls for at that scene. Plate 48 is also shown under the first lines of scene 11.',
@@ -151,7 +154,7 @@ EDITS = {
         ],
     },
     'robot': {
-        'title': 'THE ROBOT', 'sub': 'scene 43, Paul’s gymnasium: the first part', 'mood': 4, 'scenes': [43],
+        'title': 'THE ROBOT', 'score': {0: (.35, 'swell'), 1: .4, 2: .3, 3: .35, 4: .3, 7: (.55, 'hit'), 8: .45, 9: .5, 10: (.7, 'hit', 1.2), 11: .6, 12: .5, 13: .45, 14: .4, 15: .55}, 'sub': 'scene 43, Paul’s gymnasium: the first part', 'mood': 4, 'scenes': [43],
         'pictures': ['The pictures are the production’s: the storyboard by Jean Giraud (Moebius).'],
         'end': ['Scene 43 of the early draft, to the start of the duel. Plates 117, 218 and 219.',
                 'Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s.',
@@ -181,7 +184,7 @@ EDITS = {
         ],
     },
     'duel': {
-        'title': 'THE DUEL', 'sub': 'scene 43, Paul’s gymnasium: the fight with the robot', 'mood': 4, 'scenes': [43],
+        'title': 'THE DUEL', 'score': {0: .5, 2: .55, 3: (.75, 'hit'), 4: .7, 5: (.75, 'hit', 1.5), 6: .7, 7: .8, 9: .9, 12: 1.0, 13: (1.0, 'hit'), 14: .9, 15: 1.0, 16: .8, 17: (.9, 'hit', 9.5), 18: (.35, 'drop')}, 'sub': 'scene 43, Paul’s gymnasium: the fight with the robot', 'mood': 4, 'scenes': [43],
         'pictures': ['The pictures are the production’s: the storyboard by Jean Giraud (Moebius).'],
         'end': ['Scene 43 of the early draft: the duel. Plates 21, 41, 117, 219, 220 and 285.',
                 'Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s.',
@@ -358,7 +361,7 @@ def sentences(text, most=26, commas_too=True):
 
 def main():
     name, fonts, out_dir = sys.argv[1:4]
-    preview, stills = '--preview' in sys.argv, '--stills' in sys.argv
+    preview, stills, cues_only = '--preview' in sys.argv, '--stills' in sys.argv, '--cues' in sys.argv
     E = EDITS[name]; os.makedirs(out_dir, exist_ok=True)
     check_words(E)
 
@@ -384,6 +387,17 @@ def main():
     HEAD, TAIL = 9.5, 9.5
     total = HEAD + body + TAIL
     print('shots', len(shots), 'body', round(body, 1), 'total', round(total, 1), flush=True)
+    if cues_only:                                              # when the music should move, in seconds from the start of the film
+        out, level = [{'t': 0, 'intensity': 0.25}, {'t': 0.4, 'accent': 'swell'}], 0.25
+        for k, sh in enumerate(shots):
+            v = E.get('score', {}).get(k)
+            if v is None: continue
+            v = v if isinstance(v, tuple) else (v,)
+            out.append({'t': round(HEAD + sh['start'] - 0.6, 2), 'intensity': v[0], 'ramp': 2.5}); level = v[0]
+            if len(v) > 1: out.append({'t': round(HEAD + sh['start'] + (v[2] if len(v) > 2 else 0.2), 2), 'accent': v[1]})
+        out.append({'t': round(HEAD + body - 0.5, 2), 'intensity': 0.2, 'ramp': 4})
+        path = os.path.join(out_dir, name + '-cues.json'); json.dump(sorted(out, key=lambda c: c['t']), open(path, 'w'), indent=1)
+        print('wrote', path, len(out), 'cues; mood', E['mood'], '; record', math.ceil(total) + 3, 'seconds'); return
 
     layers = {}
     def words(sp, tx, label, alone=False):

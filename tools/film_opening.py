@@ -8,9 +8,10 @@ each frame toward its rectangle while the next frame's drawing fades up inside i
 The drawings are the storyboard's. The movement between them, the timing, the titles and the
 sound are this edition's. Nothing here is footage.
 
-usage: opening.py <realesr-general-x4v3.pth> <fonts dir> <out dir> [--preview]
+usage: film_opening.py <realesr-general-x4v3.pth> <fonts dir> <out dir> [--preview]
+       film_opening.py --cues <out.json>      when the music should move, for tools/record_score.js
 """
-import math, os, subprocess, sys
+import json, math, os, subprocess, sys
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 
@@ -147,7 +148,29 @@ def caption_layer(text, letter, fonts_dir):
     return a[:, :, 2::-1].copy(), a[:, :, 3:4] / 255
 
 
+# How the score moves through the journey: {frame number from 0: intensity, or (intensity, accent)}.
+# It starts hushed, lifts as the galaxy fills the screen, takes a drum through the battlefield,
+# eases across open space, and rises to the golden planet.
+SCORE = {0: .25, 3: .35, 4: (.4, 'swell'), 5: .45, 7: .55, 8: (.65, 'hit'), 11: .7, 13: .6, 14: .5, 16: .45, 19: (.5, 'swell'), 20: .6, 22: (.75, 'swell'), 23: .8}
+
+
+def cues(path):
+    durs = [max(MIN_T, math.log(1 / window(s[2])[2]) / RATE) for s in SHOT]
+    HEAD, HOLD = 9.0, 1.6; t = HEAD + HOLD; out = [{'t': 0, 'intensity': 0.25}, {'t': 0.4, 'accent': 'swell'}]
+    for k, d in enumerate(durs):
+        v = SCORE.get(k)
+        if v is not None:
+            v = v if isinstance(v, tuple) else (v,)
+            out.append({'t': round(t - 0.6, 2), 'intensity': v[0], 'ramp': 3})
+            if len(v) > 1: out.append({'t': round(t + 0.3, 2), 'accent': v[1]})
+        t += d
+    out.append({'t': round(t - 1.0, 2), 'intensity': 0.2, 'ramp': 4})
+    json.dump(sorted(out, key=lambda c: c['t']), open(path, 'w'), indent=1)
+    print('wrote', path, len(out), 'cues; mood 0; record', math.ceil(t + 9.0) + 3, 'seconds')
+
+
 def main():
+    if sys.argv[1] == '--cues': return cues(sys.argv[2])
     model_path, fonts_dir, out_dir = sys.argv[1:4]
     preview = '--preview' in sys.argv
     os.makedirs(out_dir, exist_ok=True)
