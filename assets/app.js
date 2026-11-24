@@ -290,7 +290,13 @@
       how: "In most frames the storyboard rules a small rectangle to show where the camera goes next; the film pushes into that rectangle while the next drawing fades up inside it. Eight frames carry no rectangle, and there the path into the next frame is this edition’s reading. The captions are the storyboard’s own English lines." },
     { id: "harkonnen", title: "The Harkonnen castle", len: "1 min 47 s", from: "Scenes 39 and 40 of the screenplay", scene: 39, link: "Read the two scenes",
       text: "The approach to the castle, and Peter and Feyd at chess on its balcony. The words are the screenplay’s; the pictures are the storyboard’s, with one drawing from the illustrated screenplay.",
-      how: "Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s. The pan up the castle and the push toward its head follow camera notes written on the drawing. Three of the frames survive only as a small scan and look soft." }
+      how: "Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s. The pan up the castle and the push toward its head follow camera notes written on the drawing. Three of the frames survive only as a small scan and look soft." },
+    { id: "robot", title: "The robot", len: "2 min 41 s", from: "Scene 43 of the screenplay, first part", scene: 43, link: "Read the scene",
+      text: "Paul’s gymnasium on the day the Atreides leave Caladan. His masters sit in ceremony beside a stranger in a large hat; the hat comes off, and under it is a faceless ball of steel.",
+      how: "Each line sits under the storyboard frame whose own caption describes it. The first two captions are the storyboard’s own, shown in a dimmer colour: the draft does not have the ship. Idaho’s blow and his speech have no picture, so they appear as words on black." },
+    { id: "duel", title: "The duel", len: "2 min 19 s", from: "Scene 43 of the screenplay, the fight", scene: 43, link: "Read the scene",
+      text: "Paul against the robot, which records every move he makes and grows stronger with each one.",
+      how: "The duel survives on three overlapping sheets and three single frames; where a frame exists more than once, the cleanest copy is used. The storyboard stops before the fight ends, so the last three paragraphs, the table cut in two, the robot destroyed, Leto’s entrance, appear as words on black." }
   ];
   function watchPage() {
     return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>Watch</h1>' +
