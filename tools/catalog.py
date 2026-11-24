@@ -41,7 +41,7 @@ ROWS = r"""
 13|design|Costume cards: "Duncan Idaho" and "Leto"|M|duncan,leto|Named as in plate 90. Other captions in this archive give Duncan Idaho a different costume.
 14|lineup|Les Atreides: Jessica, Paul, Leto|SB|jessica,paul,leto|
 15|lineup|Hawatt, Idaho, Halleck, Yueh|SB|hawat,duncan,gurney,yueh|
-16|frame|Four dancers fit anti-gravity bracelets to the Baron|SB|baron|
+16|frame|Four dancers fit anti-gravity bracelets to the Baron|SB|baron|Frame 6 of sequence 15, in clean pencil: the same drawing as on plate 215. That is the end of scene 41. This edition first placed it, wrongly, in scene 42.
 17|vision|Dog-beings at the foot of the crucifix|IS||
 18|vision|DUNE title card, with two people walking away|IS||
 19|frame|A body hangs in the air between robed watchers|SB||
@@ -62,7 +62,7 @@ ROWS = r"""
 34|design|Costume cards: starred and furred figure; Sardaukar|M|court,sardaukar|
 35|frame|"…and bodies of smugglers on the spice"|SB||
 36|frame|Peter cuts off Leto's right arm|SB|piter,leto|
-37|frame|The Baron afloat between hooded figures|SB|baron|
+37|frame|The Baron afloat between hooded figures|SB|baron|No caption. Placed with the Baron's weightless dance at the end of scene 41 by what it shows: likely, not certain. First placed in scene 42.
 38|design|Costume cards: dignitary in midnight blue; skeletal suit|M|court|
 39|vision|Dog-beings in their vehicle|IS||
 40|frame|The robot gets up|SB||
@@ -691,7 +691,7 @@ PLACE = {
     32: [246, 247, 248], 33: [250, 197, 251, 252], 34: [261, 262, 88, 437],
     35: [253, 254, 255, 373], 37: [208], 38: [209, 210, 211, 212],
     39: [440, 159, 317, 346, 27, 28, 283, 25, 213], 40: [139, 89, 442],
-    41: [126, 214, 215, 374, 445], 42: [16, 37, 33, 24, 355, 372, 447],
+    41: [126, 214, 215, 16, 37, 374, 445], 42: [33, 24, 355, 372, 447],
     43: [217, 218, 20, 40, 219, 284, 400, 116, 77, 410, 406, 370, 354],
     44: [412], 47: [266], 48: [378], 51: [84], 53: [86], 55: [127], 59: [145],
     60: [128, 101, 94, 223, 224, 314, 330],
