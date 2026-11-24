@@ -361,6 +361,7 @@ def sfx_track(marks, total):
 
 def main():
     fonts, out = sys.argv[1], sys.argv[2]; debug = '--debug' in sys.argv
+    os.makedirs(out, exist_ok=True)
     import film_scene as fs
     words = lines_of()
     yy, xx = np.mgrid[0:PH, 0:PW].astype(np.float32)
