@@ -181,7 +181,7 @@ ROWS = r"""
 153|frame|Stilgar shocks the worm with an electric prod|SB||
 154|frame|"…riding the worm"|SB||
 155|board|Sequence 56: riding the worm|SB||
-156|vision|The Harkonnen parade chariot|IS|baron|Matched to the screenplay's parade by its contents. The match is likely, not certain.
+156|vision|The Imperial Palace: walls of fruit, birds, women and animals in gold|IS|emperor|Matched by its contents to the screenplay's picture of the gold Imperial Palace in scene 27, whose walls show fruit, birds, women and animals sculptured in gold, with Leto's party at the door. The match is likely, not certain. This edition first placed it, wrongly, in scene 84.
 157|board|Sequences 58–59. Stilgar: "We welcome you, Muad'Dib."|SB|paul|
 158|machine|Dazzle-painted hull|F||
 159|giger|Harkonnen castle, the dome|G||
@@ -649,6 +649,7 @@ ILLUS = {
     "Humans in a room with computers behind them": (10, True),
     "Dune title card, with two people walking away": (18, True),
     "The spiral prison hole": (46, True),
+    "Exterior of the gold Imperial Palace": (156, False),
     "Clown statue under row of praying mantis": (45, True),
     "Emperor's upside-down room": (74, True),
     "The Harkonnen Castle, figures in a window": (49, True),
@@ -661,7 +662,6 @@ ILLUS = {
     "The party guests, dogs, musicians, food etc": (61, False),
     "The spice searchers' ballroom, dancing, drinking, musicians": (63, True),
     "Esmer Tuek wresting a hippo, dancers and jugglers": (62, True),
-    "The Harkonnen parade chariot, with the Baron sat on top": (156, False),
     "Jessica on top of Leto's body parts. Paul in the tent.": (67, True),
     # character plates at the front of the screenplay
     "Emperor of the Galaxy": (332, True), "Baron Harkonnen": (333, True),
