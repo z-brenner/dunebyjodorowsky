@@ -109,7 +109,7 @@
       return '<div class="fm-ch"><b>' + roman[k] + "</b><div>" + cells + "</div></div>";
     }).join("");
     return '<section class="hero gut"><div class="hero-text">' + CREDITS + '<p class="lede">The film Alejandro Jodorowsky prepared in the mid-1970s and never shot, told here from what survives of it: the early draft of the screenplay, and the drawings and paintings made for it.</p>' +
-      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shots">Shot by shot</a>' + (ls && AT[lastStep] > 1 ? '<a class="btn" href="#' + lastStep + '">Continue shot by shot · ' + (ls.sh ? "shot " + ls.n : sceneName(ls.sc).toLowerCase()) + "</a>" : "") + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
+      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shots">Shot by shot</a><a class="btn" href="#watch">Watch the opening shot</a>' + (ls && AT[lastStep] > 1 ? '<a class="btn" href="#' + lastStep + '">Continue shot by shot · ' + (ls.sh ? "shot " + ls.n : sceneName(ls.sc).toLowerCase()) + "</a>" : "") + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
       '<section class="gut"><ol class="chapters">' + D.chapters.map(function (c, k) {
         return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3, "(max-width: 600px) 94vw, 320px") + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
       }).join("") + "</ol></section>" +
@@ -283,6 +283,21 @@
   }
   document.addEventListener("visibilitychange", armAuto);
 
+  /* ---------- watch: film made from the materials ---------- */
+  function watchPage() {
+    return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>The opening shot</h1>' +
+      '<p class="lede">The storyboard draws the film’s opening as one unbroken shot across the galaxy, in 24 frames. This is that shot, moving: the camera travels into each drawing and the next one surfaces where the storyboard says it should.</p>' +
+      '<video controls playsinline preload="metadata" poster="film/opening.jpg" src="film/opening.mp4"></video>' +
+      '<p class="watch-cap">1 min 52 s, with sound · Sequence 1, “un seul plan séquence / one continuous shot” · <a href="#shot-' + (SHOT_OF[125] || 1) + '">See the 24 frames one by one</a></p>' +
+      '<div class="notes-grid">' +
+      "<div><h3>What is the storyboard’s</h3><p>All 24 drawings, by Jean Giraud (Moebius), from plates 126 and 223, and the captions under the picture, which are the storyboard’s own English lines. Nothing was redrawn, coloured or generated.</p></div>" +
+      "<div><h3>What this edition made</h3><p>The movement. In most frames the storyboard rules a small rectangle to show where the camera goes next; the film pushes into that rectangle while the next drawing fades up inside it. The speed, the soft focus on lines as they pass, the paper tone and grain, the titles and the sound are this edition’s.</p></div>" +
+      "<div><h3>Where it guesses</h3><p>Eight of the 24 frames carry no rectangle. For those, which detail leads into the next frame is this edition’s reading. The second sheet survives only as a small scan, so its drawings are enlarged by software and look softer than the first twelve.</p></div>" +
+      "<div><h3>The sound</h3><p>A recording of this site’s generated score in its first-chapter mood: a drone, wind and bell notes. It is not music made for the film.</p></div>" +
+      "<div><h3>What it is not</h3><p>Footage. No film was shot. This is an animatic: the storyboard set in motion the way it describes itself, and no more than that.</p></div>" +
+      "</div></section>";
+  }
+
   /* ---------- whichever column is shorter stays in view ---------- */
   function layout() {
     var avail = window.innerHeight - 80, wide = window.innerWidth > 860;
@@ -356,11 +371,12 @@
     var ae = document.activeElement, refocus = null;
     if (sm && ae && ae.closest && ae.closest(".shot-stage")) refocus = ae.matches("[data-auto]") ? "[data-auto]" : ae.closest(".shot-nav") ? '.shot-nav a[aria-label="' + ae.getAttribute("aria-label") + '"]' :
       ae.closest(".shot-jump") ? ".shot-jump a:" + (ae.previousElementSibling ? "last-child" : "first-child") : ae.closest(".shot-map") ? ".shot-map a[aria-current]" : ae.closest(".card") ? ".card" : ".shot-stage .pl";
-    main.innerHTML = m ? chapter(+m[1] - 1) : sm ? stepHtml(sm) : id === "art" ? art() : id === "find" ? find() : home();
+    main.innerHTML = m ? chapter(+m[1] - 1) : sm ? stepHtml(sm) : id === "art" ? art() : id === "find" ? find() : id === "watch" ? watchPage() : home();
     if (refocus) { var to = $(refocus + ":not(.off)") || $(".shot-nav a:not(.off)"); if (to) to.focus({ preventScroll: true }); }
     $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : sm ? "shots" : id)); });
     $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : sm ? stepLabel(STEPS[sm - 1]) : "";
     if (score) score.setMood(moodFor(id));
+    if (id === "watch" && score && score.playing() && snd) snd.click();    /* the film has its own sound */
     if (m) chapterReady(); else if (id === "find") findReady(); else if (sm) { stepReady(sm); sideFollow(keep); }
   }
   function route() { clearTimeout(autoTimer); go(); armAuto(); }
@@ -386,7 +402,7 @@
     if (h === "shots") h = STEPS[0].id;
     if ((m = /^shot-(\d+)$/.exec(h))) h = "shot-" + Math.min(SHOTS.length, Math.max(1, +m[1]));
     else if ((m = /^script-(\d+)(-\d+)?$/.exec(h))) h = AT[h] ? h : FIRST[+m[1]] || "home";   /* a scene that has shots goes to its first shot */
-    else if (!/^ch-(10|[1-9])$/.test(h) && h !== "art" && h !== "find") h = "home";
+    else if (!/^ch-(10|[1-9])$/.test(h) && h !== "art" && h !== "find" && h !== "watch") h = "home";
     if (h !== rendered) { render(h); window.scrollTo(0, 0); }
   }
   document.addEventListener("click", function (e) {
