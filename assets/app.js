@@ -322,13 +322,24 @@
     { id: "harkonnen", title: "The Harkonnen castle", len: "1 min 47 s", from: "Scenes 39 and 40 of the screenplay", scene: 39, link: "Read the two scenes",
       text: "The approach to the castle, and Peter and Feyd at chess on its balcony. The words are the screenplay’s; the pictures are the storyboard’s, with one drawing from the illustrated screenplay.",
       how: "Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s. The pan up the castle and the push toward its head follow camera notes written on the drawing. Three of the frames survive only as a small scan and look soft." },
+    { id: "baron", title: "The Baron", len: "4 min 5 s", from: "Scene 41 of the screenplay", scene: 41, link: "Read the scene",
+      text: "The feast in the head of the Harkonnen castle: walls that spit wine, a hundred dishes, and Baron Vladimir Harkonnen carried in on a palanquin. When the guests have gone, his slaves make him weightless, and he dances.",
+      how: "The storyboard draws only the end of the scene, the Baron fitted with his anti-gravity devices, so the feast is told under Moebius’s design of the Baron and in words on black. One sentence of the scene is left out of the film, a dance the draft calls erotic with adolescents in it; the script in the Film view is complete. Four loose pencil frames are used; one of them, the Baron laughing, comes from another sequence, and its pairing is loose." },
     { id: "robot", title: "The robot", len: "2 min 41 s", from: "Scene 43 of the screenplay, first part", scene: 43, link: "Read the scene",
       text: "Paul’s gymnasium on the day the Atreides leave Caladan. His masters sit in ceremony beside a stranger in a large hat; the hat comes off, and under it is a faceless ball of steel.",
       how: "Each line sits under the storyboard frame whose own caption describes it. The first two captions are the storyboard’s own, shown in a dimmer colour: the draft does not have the ship. Idaho’s blow and his speech have no picture, so they appear as words on black." },
     { id: "duel", title: "The duel", len: "2 min 19 s", from: "Scene 43 of the screenplay, the fight", scene: 43, link: "Read the scene",
       text: "Paul against the robot, which records every move he makes and grows stronger with each one.",
-      how: "The duel survives on three overlapping sheets and three single frames; where a frame exists more than once, the cleanest copy is used. The storyboard stops before the fight ends, so the last three paragraphs, the table cut in two, the robot destroyed, Leto’s entrance, appear as words on black." }
-  ];
+      how: "The duel survives on three overlapping sheets and three single frames; where a frame exists more than once, the cleanest copy is used. The storyboard stops before the fight ends, so the last three paragraphs, the table cut in two, the robot destroyed, Leto’s entrance, appear as words on black." },
+    { id: "shaihulud", title: "Shai-Hulud", len: "3 min 50 s", from: "Scene 60 of the screenplay, first part", scene: 60, link: "Read the scene",
+      text: "Dune. Duke Leto flies Paul, Hawatt and the ecologist Kynes over the desert. They see their first worm, a field of spice, and a harvester set down to work it before the worm arrives.",
+      how: "The ornithopter is Chris Foss’s drawing, the first worm H.R. Giger’s painting; the rest is the storyboard’s twenty-fourth sequence. The storyboard is a later version than the draft: its harvesters have three minutes where the draft gives them twenty. The field of spice has no picture and appears as words on black." },
+    { id: "harvester", title: "The harvester", len: "2 min 48 s", from: "Scene 60 of the screenplay, second part", scene: 60, link: "Read the scene",
+      text: "The wing that should lift the harvester away does not answer. The men refuse to leave the spice. Then the wing appears, and explodes.",
+      how: "All storyboard. The four watchmen answering “negative” have no frame and appear as words on black. The storyboard counts fewer men and craft than the draft and words the radio calls differently, so the pairing is loose in places." },
+    { id: "worm", title: "The worm", len: "3 min 3 s", from: "Scene 60 of the screenplay, third part", scene: 60, link: "Read the scene",
+      text: "The Duke throws out his weapons to make room for four more men, and takes off as the worm arrives. The harvester goes into its mouth. Kynes prays; and wonders at a Duke who risks his life for his men.",
+      how: "The worm at the harvester is the illustrated screenplay’s own picture for this scene, in colour as drawn. What is said in the ornithopter afterwards has no picture and appears as words on black; Kynes’s last speech is set under Moebius’s design for him." }  ];
   function watchPage() {
     return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>Watch</h1>' +
       '<p class="lede">Pieces of the film, made from what survives of it: the production’s own drawings set in motion under the screenplay’s own words. No film was shot, and nothing here was drawn or generated to fill a gap.</p>' +
