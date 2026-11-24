@@ -52,6 +52,11 @@
     });
   });
   var sceneBy = {}; SC.scenes.forEach(function (sc) { sceneBy[sc.n] = sc; });
+  var CH_SHOTS = D.chapters.map(function () { return { first: 0, n: 0 }; }), SHOT_SCENES = [];
+  SHOTS.forEach(function (sh, x) {
+    var c = CH_SHOTS[chapterOf(sh.sc)]; if (!c.n) c.first = x + 1; c.n++;
+    if (SHOT_SCENES[SHOT_SCENES.length - 1] !== sh.sc) SHOT_SCENES.push(sh.sc);
+  });
 
   /* ---------- pieces ---------- */
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
@@ -76,14 +81,14 @@
   /* ---------- contents ---------- */
   function home() {
     var restored = P.filter(function (p) { return p.r && p.r[2].length; }).length, straight = P.filter(function (p) { return p.r && p.r[2].indexOf("straightened") >= 0; }).length;
-    var withArt = SC.scenes.filter(function (sc) { return sc.n && ART[sc.n].length; }).length, at = +store.get("dune.at") || 0;
+    var withArt = SC.scenes.filter(function (sc) { return sc.n && ART[sc.n].length; }).length, at = +store.get("dune.at") || 0, lastShot = +store.get("dune.shot") || 0;
     var film = D.chapters.map(function (c, k) {
       var cells = "";
       for (var n = c.a; n <= c.b; n++) if (ART[n]) cells += '<a href="#scene-' + n + '"' + (ART[n].length ? ' class="has"' : "") + ' title="Scene ' + n + (ART[n].length ? ", has art" : ", script only") + '"><span>Scene ' + n + "</span></a>";
       return '<div class="fm-ch"><b>' + roman[k] + "</b><div>" + cells + "</div></div>";
     }).join("");
     return '<section class="hero gut"><div class="hero-text">' + CREDITS + '<p class="lede">The film Alejandro Jodorowsky prepared in the mid-1970s and never shot, told here from what survives of it: the early draft of the screenplay, and the drawings and paintings made for it.</p>' +
-      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shot-1">Shot by shot</a>' + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
+      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shot-1">Shot by shot</a>' + (lastShot > 1 && lastShot <= SHOTS.length ? '<a class="btn" href="#shot-' + lastShot + '">Continue at shot ' + lastShot + "</a>" : "") + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
       '<section class="gut"><ol class="chapters">' + D.chapters.map(function (c, k) {
         return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3, "(max-width: 600px) 94vw, 320px") + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
       }).join("") + "</ol></section>" +
@@ -189,15 +194,32 @@
       else if (b[0] === "d") text += '<p class="dlg"><b>' + esc(b[1]) + "</b><span>" + esc(b[2]) + "</span></p>";
       else if (b[0] === "t") text += '<p class="ttl">TITLE : ' + esc(b[1]) + "</p>";
     });
-    var dims = sh.k ? D.frame : (p.v || size(sh.i));
+    var dims = sh.k ? D.frame : (p.v || size(sh.i)), at = SHOT_SCENES.indexOf(sh.sc), prevSc = SHOT_SCENES[at - 1], nextSc = SHOT_SCENES[at + 1];
     var what = sh.d ? "Close-up " + sh.k + " of " + p.fd + " from plate " + (sh.i + 1) + ", found and squared up by software. The whole sheet comes just before these; the software may have missed frames on it"
       : sh.k ? "Frame " + sh.k + " of " + p.f + ", cut from plate " + (sh.i + 1) + " and squared up by this edition" + (p.fp && p.fp.indexOf(sh.k) >= 0 ? ". The photograph cuts this frame off" : "") + (p.fe && p.fe.indexOf(sh.k) >= 0 ? ". Its ruled lines could not be found, so the cut is an estimate and may be off-centre" : "") : KIND[p.room] + ", plate " + (sh.i + 1);
     return '<div class="shot"><div class="shot-stage"><a class="pl" href="#plate-' + (sh.i + 1) + '" data-i="' + sh.i + '" title="See the whole plate"><img src="' + shotSrc(sh) + '" width="' + dims[0] + '" height="' + dims[1] + '" alt="' + esc(p.t) + '"></a>' +
       '<p class="shot-cap"><b>' + esc(p.t) + "</b>" + esc(what) + " · " + esc(D.credits[p.c] || "") + " · " + state(sh.i) + " · " + placing[p.by || "e"] + "</p>" +
-      '<nav class="shot-nav"><a class="btn' + (n > 1 ? "" : " off") + '" href="#shot-' + Math.max(1, n - 1) + '" aria-label="Previous shot">←</a><span>Shot ' + n + " of " + SHOTS.length + '</span><a class="btn solid' + (n < SHOTS.length ? "" : " off") + '" href="#shot-' + Math.min(SHOTS.length, n + 1) + '" aria-label="Next shot">→</a></nav></div>' +
+      '<div class="shot-map" aria-label="Chapters">' + CH_SHOTS.map(function (c, x) {
+        if (!c.n) return "";
+        var done = x < k ? 100 : x > k ? 0 : (n - c.first + 1) / c.n * 100;
+        return '<a href="#shot-' + c.first + '" style="flex:' + c.n + '" title="' + roman[x] + ". " + esc(D.chapters[x].title) + ", " + c.n + ' shots"' + (x === k ? ' aria-current="true"' : "") + '><i style="width:' + done + '%"></i><span>Chapter ' + roman[x] + ", " + esc(D.chapters[x].title) + "</span></a>";
+      }).join("") + "</div>" +
+      '<nav class="shot-nav"><a class="btn' + (n > 1 ? "" : " off") + '" href="#shot-' + Math.max(1, n - 1) + '" aria-label="Previous shot">←</a><span>Shot ' + n + " of " + SHOTS.length + '</span><button type="button" class="btn" data-auto aria-pressed="' + auto + '">' + (auto ? "Pause" : "Play") + '</button><a class="btn solid' + (n < SHOTS.length ? "" : " off") + '" href="#shot-' + Math.min(SHOTS.length, n + 1) + '" aria-label="Next shot">→</a></nav>' +
+      '<p class="shot-jump">' + (prevSc ? '<a href="#shot-' + FIRST_SHOT[prevSc] + '">← Scene ' + prevSc + "</a>" : "<span></span>") + (nextSc ? '<a href="#shot-' + FIRST_SHOT[nextSc] + '">Scene ' + nextSc + " →</a>" : "<span></span>") + "</p></div>" +
       '<aside class="shot-side" data-sc="' + sh.sc + '"><span class="label">Chapter ' + roman[k] + " · " + esc(D.chapters[k].title) + '</span><h2><b>' + sh.sc + "</b>" + esc(sc.h || "Scene " + sh.sc) + '</h2><p class="shot-note">The script for this scene. The storyboard is a later version of the film, so a shot may not match these lines. <a href="#scene-' + sh.sc + '">Open the scene</a></p><div class="sc-text">' + text + "</div></aside></div>";
   }
-  function shotReady(n) { if (n < SHOTS.length) { var im = new Image(); im.src = shotSrc(SHOTS[n]); } }
+  function shotReady(n) { store.set("dune.shot", n); if (n < SHOTS.length) { var im = new Image(); im.src = shotSrc(SHOTS[n]); } }
+  /* Play: step to the next shot by itself. It waits while the plate viewer is open or the tab is hidden. */
+  var auto = false, autoTimer = 0, AUTO_MS = 7000;
+  function armAuto() {
+    clearTimeout(autoTimer);
+    var sm = /^shot-(\d+)$/.exec(rendered);
+    if (!sm) auto = false;
+    if (!auto || !view.hidden || document.hidden) return;
+    if (+sm[1] >= SHOTS.length) { auto = false; var b = $("[data-auto]"); if (b) { b.textContent = "Play"; b.setAttribute("aria-pressed", "false"); } return; }
+    autoTimer = setTimeout(function () { location.hash = "shot-" + (+sm[1] + 1); }, AUTO_MS);
+  }
+  document.addEventListener("visibilitychange", armAuto);
 
   /* ---------- whichever column is shorter stays in view ---------- */
   function layout() {
@@ -275,7 +297,8 @@
     if (score) score.setMood(moodFor(id));
     if (m) chapterReady(); else if (id === "find") findReady(); else if (sm) { shotReady(+sm[1]); if (keep) $(".shot-side").scrollTop = keep; }
   }
-  function route() {
+  function route() { clearTimeout(autoTimer); go(); armAuto(); }
+  function go() {
     var h = location.hash.replace(/^#/, "") || "home", m;
     if ((m = /^plate-(\d+)$/.exec(h)) && +m[1] >= 1 && +m[1] <= 448) {
       var i = +m[1] - 1;
@@ -297,6 +320,8 @@
   document.addEventListener("click", function (e) {
     var j = e.target.closest("[data-scroll]");
     if (j) { e.preventDefault(); var t = document.getElementById(j.dataset.scroll); if (t) t.scrollIntoView({ behavior: "smooth" }); return; }
+    var play = e.target.closest("[data-auto]");
+    if (play) { auto = !auto; play.textContent = auto ? "Pause" : "Play"; play.setAttribute("aria-pressed", String(auto)); armAuto(); return; }
     var more = e.target.closest("[data-more]");
     if (more) { unfold(more.closest(".scene")); layout(); return; }
     if (e.target.closest("[data-fold]")) { store.set("dune.open", store.get("dune.open") === "1" ? "0" : "1"); var keep = rendered; rendered = ""; render(keep); return; }
@@ -311,6 +336,12 @@
     }
     if (e.key === "Escape") closeView(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
   });
+  var touch = null;                                                      /* swipe left or right on a shot */
+  main.addEventListener("touchstart", function (e) { touch = e.touches.length === 1 && e.target.closest(".shot-stage") ? [e.touches[0].clientX, e.touches[0].clientY] : null; }, { passive: true });
+  main.addEventListener("touchend", function (e) {
+    if (!touch) return; var dx = e.changedTouches[0].clientX - touch[0], dy = e.changedTouches[0].clientY - touch[1], sm = /^shot-(\d+)$/.exec(rendered); touch = null;
+    if (sm && Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) location.hash = "shot-" + Math.min(SHOTS.length, Math.max(1, +sm[1] + (dx < 0 ? 1 : -1)));
+  }, { passive: true });
   var rz = 0;
   window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(layout, 150); });
   window.addEventListener("hashchange", route);
