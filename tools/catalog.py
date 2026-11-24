@@ -250,8 +250,8 @@ ROWS = r"""
 222|board|Sequence 1, second sheet|SB||
 223|color|Ornithopter and worm, colourised|U||
 224|color|Ornithopter and worm, colourised|U||
-225|board|Sardaukar and children; the child's sword|SB|sardaukar|
-226|color|The Sardaukar swords lunge into the crowd of children|U|sardaukar|
+225|board|Sardaukar and children; the child's sword|SB|sardaukar|Placed by its contents in the battle before the palace, scene 79: the Atreides and beggars' army, which scene 75 says has a line of children, meets the Sardaukars. The draft does not describe this moment itself, so the placing is likely, not certain. This edition first placed it, wrongly, in scene 28.
+226|color|The Sardaukar swords lunge into the crowd of children|U|sardaukar|The frames that follow plate 226, in colour. Placed with it in scene 79, on the same grounds.
 227|board|Arrival on the esplanade of the Senate|SB||
 228|board|Sequence 3: le Sénat|SB||
 229|board|The Baron: "Where is Paul?"|SB|baron,piter,leto|
@@ -262,10 +262,10 @@ ROWS = r"""
 234|color|Jessica assembles the pieces of Leto's body|U|jessica,leto|
 235|color|The eye: a vision in twelve frames|U||
 236|board|Sequence 3|SB||
-237|board|Sequence 4|SB||
-238|board|Sequence 4|SB||
-239|board|Sequence 5|SB||
-240|board|Sequence 5|SB||
+237|board|Sequence 4: the Emperor's upside-down throne room|SB|emperor|Its captions place it: "Leto slides into the throne room, Emperor upside-down", "May I introduce you to my favourite spider?". That is scene 29. This edition first placed it, wrongly, in scene 27.
+238|board|Sequence 4: the throne room turns|SB|emperor|"Room starts to turn", "Which is the floor and which is the ceiling?": the end of scene 29. This edition first placed it, wrongly, in scene 27.
+239|board|Sequence 5: the Emperor's decision before the Senate|SB|emperor|Its captions place it: the throne rises, and the Emperor withdraws the concession of Dune from Baron Harkonnen and gives it to Duke Leto. That is scene 31. This edition first placed it, wrongly, in scene 29.
+240|board|Sequence 5: applause, and the Atreides leave|SB|emperor|The Baron's sullen applause and the Atreides making their way out through the crowd: scene 31. This edition first placed it, wrongly, in scene 29.
 241|board|The old woman: "The poison is in your blood. Change it… or die."|SB|jessica,mother|
 242|board|Sequence 63|SB||
 243|board|Sequence 64: the vision|SB||
@@ -687,7 +687,7 @@ REEL_SCENES = {"one-shot": (1, 19), "gold": (20, 31), "caladan": (32, 38), "gied
 PLACE = {
     1: [125, 222, 189, 190, 392, 393, 313, 365, 379, 35, 22, 171, 301],
     20: [227, 228, 380], 22: [236, 71, 321],
-    27: [3, 12, 237, 238, 395], 28: [225, 226], 29: [239, 240, 371, 277],
+    27: [3, 12, 395], 29: [237, 238, 371, 277], 31: [239, 240],
     32: [246, 247, 248], 33: [250, 197, 251, 252], 34: [437],
     35: [253, 254, 255, 373], 36: [88, 261, 262], 37: [208], 38: [209, 210, 211, 212, 213],
     39: [440, 159, 317, 346, 27, 28, 283, 25], 40: [139, 89, 442],
@@ -695,7 +695,7 @@ PLACE = {
     43: [217, 218, 20, 40, 219, 284, 400, 116, 77, 410, 406, 370, 354],
     44: [412], 47: [266], 48: [378], 51: [84], 53: [86], 55: [127], 59: [145],
     60: [128, 101, 94, 223, 224, 314, 330],
-    71: [111], 78: [92], 84: [110, 216], 87: [229, 230, 36, 30, 231], 89: [149],
+    71: [111], 78: [92], 79: [225, 226], 84: [110, 216], 87: [229, 230, 36, 30, 231], 89: [149],
     92: [233], 94: [234], 105: [99], 109: [85, 157], 115: [23],
     116: [242, 241, 244], 117: [91], 119: [235], 121: [119, 95, 382, 245],
     125: [105, 153, 154, 155, 79, 249, 142], 126: [113],

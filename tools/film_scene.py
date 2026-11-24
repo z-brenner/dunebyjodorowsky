@@ -21,11 +21,13 @@ ASPECT = PW / PH
 MIX = 0.8                                 # seconds for one picture to dissolve into the next
 READ = 0.34                               # seconds a word stays up
 GOLD, PAPER_TXT, DIM, BOARD = (217, 170, 76), (236, 226, 204), (156, 123, 60), (190, 160, 110)
+PAPER_TONE = np.array([0.90, 0.955, 0.975], np.float32)        # BGR: white paper warmed a little
 LIMIT = 25 * 1024 * 1024                  # the host serves no file larger than this
 
 # A shot: (source, camera, lines[, seconds to hold a shot that has no words; 3 if not given])
-#   source  ('plate', index[, (l, t, r, b)])    a whole restored plate, art/NNN.webp, or the part of it inside
-#                                               its drawn border, as fractions of the plate
+#   source  ('plate', index[, (l, t, r, b)[, 'paper']])   a whole restored plate, art/NNN.webp, or the part of it
+#                                               inside its drawn border, as fractions of the plate. 'paper' gives a
+#                                               storyboard sheet the same warm paper tone as the frames cut from sheets
 #           ('frame', index, n[, (l, t, r, b)]) a frame cut from a sheet, frames/NNN-KK.webp. The drawing
 #                                               inside its ruled border is found by itself, or given in pixels
 #           ('closeup', index, n)               the same, for a sheet whose frames were found one at a time
@@ -35,12 +37,14 @@ LIMIT = 25 * 1024 * 1024                  # the host serves no file larger than 
 #           as fractions of the picture: left, top, width. Height follows from the screen's shape.
 #   lines   [(speaker or None, text)]  words of the screenplay, unaltered.
 #           'SCENE' marks a slate. 'BOARD' marks a caption printed on the storyboard, not the script.
+#           'TITLE' marks a title the script itself superimposes on the picture; it is checked like any other line.
 #           ('NUM', n) shows nothing itself: from here on, the label above the picture names scene n.
 # A film's 'score' says how the music moves: {shot number: intensity} or {shot number: (intensity, accent)}
 # or (intensity, accent, seconds into the shot). Intensity runs from 0, hushed, to 1, full; it holds until the
 # next entry. An accent is 'hit', 'swell' or 'drop'. --cues writes these as times for tools/record_score.js.
 #   T(scene, k) fetches block k of a scene from assets/script.js, so long passages are not retyped;
 #   T(scene, k, a, b) fetches its sentences a to b. J(...) joins fetched pieces into one line.
+#   Q(scene, k, words) quotes part of block k where one sentence is too long for the screen; it must be in the block.
 F, C = 'frame', 'closeup'
 
 
@@ -62,10 +66,17 @@ def J(*parts):
     return (parts[0][0], ' '.join(x[1] for x in parts))
 
 
+def Q(scene, k, words):
+    blk = SCRIPT[scene][k]
+    if ' '.join(words.split()) not in ' '.join(blk[-1].split()): sys.exit('not in scene %d block %d: %s' % (scene, k, words))
+    return (blk[1] if blk[0] == 'd' else None, words)
+
+
 # the illustrated screenplay's pictures, inside their drawn borders
 P194, P45, P40, P8 = ('plate', 193, (.235, .145, .75, .89)), ('plate', 44, (.023, .036, .974, .959)), ('plate', 39, (.042, .047, .965, .929)), ('plate', 7, (.025, .038, .973, .955))
 P42, P18, P43 = ('plate', 41, (.036, .066, .963, .944)), ('plate', 17, (.044, .045, .957, .942)), ('plate', 42, (.056, .05, .959, .929))
 P48, P44, P11 = ('plate', 47, (.028, .04, .971, .964)), ('plate', 43, (.033, .034, .963, .936)), ('plate', 10, (.03, .038, .971, .961))
+P157, P46, P75 = ('plate', 156, (.025, .046, .98, .959)), ('plate', 45, (.031, .028, .97, .957)), ('plate', 74, (.025, .041, .97, .971))
 ALONE = ('text',)
 EDITS = {
     'harkonnen': {
@@ -151,6 +162,106 @@ EDITS = {
             (ALONE, None, [('NUM', 14), T(14, 0)]),
             (ALONE, None, [T(14, 1), T(14, 2)]),
             (ALONE, None, [T(14, 3), T(14, 4)]),
+        ],
+    },
+    'senate': {
+        'title': 'THE SENATE', 'sub': 'scenes 20 to 22: Duke Leto before the Houses', 'mood': 1, 'scenes': [20, 21, 22],
+        'pictures': ['The pictures are the production\u2019s: the storyboard by Jean Giraud (Moebius).'],
+        'end': ['Scenes 20 to 22 of the early draft. Plates 72, 228, 229, 237 and 322.',
+                'The storyboard is a later version of these scenes: a car where the draft has a horse-drawn wagon, and a sharper accusation.',
+                'Each line sits under the frame nearest to it; where the two versions part, the pairing is loose. It is this edition\u2019s throughout.',
+                'Edit, movement, timing, titles and sound: this edition. Unofficial; the art remains the artists\u2019.'],
+        'score': {0: (.35, 'swell'), 1: .4, 2: .5, 3: (.6, 'hit'), 4: .4, 5: .3, 6: .55, 7: .6, 8: (.4, 'swell'), 10: .5, 11: .45, 12: .5, 14: .55, 15: (.65, 'swell'),
+                  16: .65, 18: (.7, 'hit'), 19: .7, 21: .6, 23: .7, 25: .75, 26: .6, 27: (.4, 'drop'), 28: .45, 29: (.5, 'hit', 6)},
+        'shots': [
+            ((C, 227, 2), 'in', [('NUM', 20), T(20, 0), T(20, 1), ('TITLE', T(20, 3)[1])]),
+            ((C, 227, 1), 'right', [T(20, 4), T(20, 5)]),
+            (('plate', 227, (.668, .06, .995, .46), 'paper'), 'in', [T(20, 6)]),
+            ((C, 227, 3), 'rush', [], 3.4),
+            (ALONE, None, [T(20, 7)]),
+            (ALONE, None, [('NUM', 21), J(T(21, 0), T(21, 1), T(21, 2))]),
+            ((F, 236, 1), 'left', [T(21, 3)]),
+            ((F, 236, 2), 'rush', [T(21, 4)]),
+            (('plate', 228, (0, 0, 1, 1), 'paper'), [(0.42, 0.10, 0.56), (0.05, 0.36, 0.90)], [('NUM', 22), T(22, 0, 0, 3)]),
+            ((F, 236, 3), 'in', [T(22, 0, 3, 4)]),
+            ((F, 236, 5), 'right', [T(22, 1, 0, 1)]),
+            ((F, 236, 7), 'in', [T(22, 1, 1, 2)]),
+            ((F, 236, 6), 'left', [T(22, 2)]),
+            ((F, 236, 8), 'in', [T(22, 3)]),
+            ((F, 236, 9), 'rush', [T(22, 4, 0, 1)]),
+            ((F, 236, 10), 'in', [T(22, 4, 1, 3)]),
+            ((F, 321, 3), 'in', [T(22, 5, 0, 1)]),
+            ((F, 321, 4), 'right', [T(22, 5, 1, 2)]),
+            ((F, 321, 7), 'rush', [T(22, 5, 2, 3)]),
+            ((F, 321, 1), 'left', [T(22, 6, 0, 1)]),
+            ((F, 321, 2), 'right', [T(22, 6, 1, 2)]),
+            ((F, 71, 2), 'in', [T(22, 6, 2, 3)]),
+            ((F, 71, 4), 'in', [T(22, 7)]),
+            ((F, 71, 3), 'rush', [T(22, 8)]),
+            ((F, 71, 1), 'in', [T(22, 9)]),
+            ((F, 321, 8), 'left', [T(22, 10)]),
+            (ALONE, None, [T(22, 11, 0, 3)]),
+            ((F, 71, 10), 'in', [T(22, 11, 3, 4), T(22, 12, 0, 2)]),
+            ((F, 71, 11), 'in', [T(22, 12, 2, 3)]),
+            (ALONE, None, [T(22, 13)]),
+        ],
+    },
+    'emperor': {
+        'title': 'THE EMPEROR', 'sub': 'scenes 27 to 29: the upside-down throne room', 'mood': 1, 'scenes': [27, 28, 29],
+        'pictures': ['The pictures are the production\u2019s: the storyboard by Jean Giraud (Moebius),', 'and three drawings from the illustrated screenplay, artist uncredited in the source.'],
+        'end': ['Scenes 27 to 29 of the early draft. Plates 46, 75, 157, 238 and 239.',
+                'Each line sits under the storyboard frame whose own caption describes it, or under the screenplay\u2019s picture of that scene. That pairing is this edition\u2019s.',
+                'The picture of the palace is matched to its scene by what it shows; that match is likely, not certain.',
+                'Edit, movement, timing, titles and sound: this edition. Unofficial; the art remains the artists\u2019.'],
+        'score': {0: (.35, 'swell'), 1: .35, 2: .4, 3: (.45, 'drop'), 4: .4, 6: .45, 7: .5, 8: .45, 9: .5, 11: .4, 12: .55, 13: .4, 14: .5, 15: .55, 16: .6,
+                  17: (.7, 'swell'), 18: .85, 19: .9, 20: (1.0, 'hit')},
+        'shots': [
+            (P157, [(0.0, 0.0, 1.0), (0.30, 0.60, 0.50)], [('NUM', 27), ('TITLE', T(27, 0)[1]), T(27, 1)]),
+            (P46, [(0.0, 0.0, 1.0), (0.10, 0.10, 0.80)], [('NUM', 28), T(28, 0)]),
+            (P46, [(0.10, 0.10, 0.80), (0.45, 0.33, 0.42)], [T(28, 1), T(28, 2)]),
+            ((F, 237, 1), 'in', [('NUM', 29), T(29, 0)]),
+            (P75, [(0.0, 0.0, 1.0), (0.0, 0.28, 1.0)], [T(29, 1, 0, 3)]),
+            (P75, [(0.05, 0.30, 0.60), (0.45, 0.30, 0.55)], [T(29, 1, 3, 5)]),
+            (P75, [(0.20, 0.05, 0.60), (0.28, 0.13, 0.34)], [T(29, 2)]),
+            ((F, 237, 6), 'in', [T(29, 3)]),
+            ((F, 237, 7), 'left', [T(29, 4)]),
+            ((F, 237, 8), 'in', [T(29, 5, 0, 1)]),
+            ((F, 237, 9), 'in', [T(29, 5, 1, 2)]),
+            (P75, [(0.0, 0.42, 0.50), (0.05, 0.45, 0.42)], [T(29, 6)]),
+            ((F, 237, 5), 'in', [T(29, 7)]),
+            (P75, [(0.50, 0.42, 0.50), (0.55, 0.45, 0.42)], [T(29, 8)]),
+            ((F, 237, 4), 'in', [T(29, 9)]),
+            ((F, 237, 3), 'in', [T(29, 10)]),
+            ((F, 237, 5), 'out', [T(29, 11)]),
+            ((F, 238, 1), 'right', [T(29, 12)]),
+            ((F, 238, 2), 'rush', [T(29, 13, 0, 3)]),
+            ((F, 238, 3), 'rush', [T(29, 13, 3, 4)]),
+            ((F, 238, 4), 'rush', [T(29, 14)]),
+        ],
+    },
+    'decision': {
+        'title': 'THE DECISION', 'sub': 'scenes 30 and 31: Dune is given to the Atreides', 'mood': 1, 'scenes': [30, 31],
+        'pictures': ['The pictures are the production\u2019s: the storyboard by Jean Giraud (Moebius),', 'and one drawing from the illustrated screenplay, artist uncredited in the source.'],
+        'end': ['Scenes 30 and 31 of the early draft. Plates 46, 240 and 241.',
+                'The storyboard is a later version: its Emperor rises on a throne, where the draft seats him in the transparent stomach of a pregnant woman.',
+                'Each line sits under the frame nearest to it; that pairing is this edition\u2019s.',
+                'Edit, movement, timing, titles and sound: this edition. Unofficial; the art remains the artists\u2019.'],
+        'score': {0: (.5, 'hit'), 1: .4, 2: .35, 3: (.45, 'swell'), 5: .5, 6: .6, 7: .55, 8: .65, 9: .5, 11: (.4, 'drop')},
+        'shots': [
+            (P46, [(0.45, 0.33, 0.42), (0.30, 0.20, 0.60)], [('NUM', 30), T(30, 0, 0, 2)]),
+            (P46, [(0.20, 0.55, 0.60), (0.25, 0.60, 0.50)], [T(30, 0, 2, 4)]),
+            (P46, [(0.10, 0.10, 0.80), (0.0, 0.0, 1.0)], [T(30, 1), T(30, 2)]),
+            ((F, 239, 1), 'in', [('NUM', 31), T(31, 0)]),
+            ((F, 239, 2), 'left', []),
+            ((F, 239, 3), 'in', [Q(31, 1, 'To give cause for satisfaction to the minor Houses who mistrust one of the major Houses,'),
+                                 Q(31, 1, 'we have decided to take the Dune concession away from the Major House of Baron Vladimir Harkonnen')]),
+            ((F, 239, 5), 'rush', [Q(31, 1, 'and to grant it to the minor Houses of Duke Leto Atreides,')]),
+            ((F, 240, 2), 'in', [Q(31, 1, 'who shall leave his native planet, Caladan, and repair, together with his armies, to Dune'),
+                                 Q(31, 1, "in order to prevent smuggling, and look after the Imperium's interests.")]),
+            ((F, 240, 1), 'right', [T(31, 2, 0, 1)]),
+            ((F, 240, 5), 'in', []),
+            ((F, 240, 7), 'out', []),
+            ((F, 240, 9), 'in', [T(31, 2, 1, 2)]),
         ],
     },
     'robot': {
@@ -250,12 +361,14 @@ def load(src):
         im = cv2.imread(os.path.join(REPO, 'art', f'{src[1]:03d}.webp'))
         if len(src) > 2:
             h, w = im.shape[:2]; l, t, r, b = src[2]; im = im[int(t * h):int(b * h), int(l * w):int(r * w)]
-        return im.astype(np.float32), f'PLATE {src[1] + 1}'
+        im = im.astype(np.float32)
+        if len(src) > 3 and src[3] == 'paper': im = im * PAPER_TONE
+        return im, f'PLATE {src[1] + 1}'
     kind, i, n = src[:3]
     im = cv2.imread(os.path.join(REPO, 'frames', f'{i:03d}-{n:02d}.webp'))
     l, t, r, b = src[3] if len(src) > 3 else inner(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY))
     im = cv2.resize(im[t:b, l:r], None, fx=2, fy=2, interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
-    return im * np.array([0.90, 0.955, 0.975], np.float32), f'PLATE {i + 1} · ' + ('FRAME ' if kind == F else 'CLOSE-UP ') + str(n)   # white paper warmed a little
+    return im * PAPER_TONE, f'PLATE {i + 1} · ' + ('FRAME ' if kind == F else 'CLOSE-UP ') + str(n)   # white paper warmed a little
 
 
 def camera(im, how):
@@ -322,9 +435,9 @@ def words_layer(speaker, text, label, fonts, alone=False):
         f = font(fonts, 'CourierPrime.ttf', size); b = font(fonts, 'CourierPrime-Bold.ttf', size); small = font(fonts, 'CourierPrime-Bold.ttf', 20)
         d.text((60, PY - 44), label, font=small, fill=DIM + (255,))          # what the picture is, above it and out of the way of the words
         if not text: return
-        if speaker == 'SCENE':
+        if speaker in ('SCENE', 'TITLE'):
             t = text.upper(); d.text(((W - d.textlength(t, font=b)) / 2, PY + PH + 46), t, font=b, fill=GOLD + (255,)); return
-        named = speaker and speaker != 'BOARD'
+        named = speaker and speaker not in ('BOARD', 'TITLE')
         lines = wrap(text, f, W - (520 if alone else 560 if not named else 420)); step = 62 if alone else 44 if not named else 40
         if alone: y = PY + (PH - step * (len(lines) + (1 if named else 0))) // 2
         else: y = PY + PH + (14 if named else 24 + (0 if len(lines) > 1 else 20))
@@ -376,8 +489,8 @@ def main():
         if scene_no is not None: label = f'SCENE {scene_no} \u00b7 ' + label
         pieces = []
         for sp, tx in lines:
-            for p in ([tx] if sp in ('SCENE', 'BOARD') else sentences(tx, 40 if alone else 22 if sp else 26, not alone)): pieces.append((sp, p))
-        times = [2.8 if sp == 'SCENE' else max(2.4, 1.0 + READ * len(p.split())) for sp, p in pieces]
+            for p in ([tx] if sp in ('SCENE', 'BOARD', 'TITLE') else sentences(tx, 40 if alone else 22 if sp else 26, not alone)): pieces.append((sp, p))
+        times = [2.8 if sp == 'SCENE' else 3.4 if sp == 'TITLE' else max(2.4, 1.0 + READ * len(p.split())) for sp, p in pieces]
         dur = max(4.2 if pieces else (hold[0] if hold else 3.0), sum(times) + 0.6) + (1.5 if isinstance(cam, list) and len(cam) > 2 else 0)
         at = t + 0.3
         for (sp, p), d in zip(pieces, times): cues.append((at, at + d, sp, p, label, alone)); at += d
