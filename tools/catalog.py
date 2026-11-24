@@ -83,8 +83,8 @@ ROWS = r"""
 55|relic|Plan drawing of a red vehicle|P||
 56|machine|Leto's car, a transparency held to the light|F||
 57|giger|Harkonnen castle, full-height drawing (archive photograph)|G||
-58|vision|The revolt against the machines|IS||The screenplay has two pictures of this scene; which one this is cannot be told from the transcription.
-59|vision|A ship before the barrier of the galaxy (detail)|IS||A detail of plate 351.
+58|vision|The Harkonnen party: gargoyles pouring wine, the Baron on his palanquin|IS|baron|Matched by its contents to the screenplay's picture of the Harkonnen party in scene 41: gargoyles spitting wine into a pool, hogs swimming in it, and the Baron carried in on a palanquin by children. The match is likely, not certain. This edition first placed it, wrongly, in scene 14.
+59|vision|Paul in his bedroom: the fish bed and the hunter-seeker (detail)|IS|paul|A detail of plate 352.
 60|vision|Sandworm near the harvester|IS||
 61|vision|The party guests, dogs and musicians|IS||Matched to the screenplay's party scene by its contents. The match is likely, not certain.
 62|vision|Esmer Tuek wrestling a hippo, with dancers and jugglers|IS||
@@ -181,7 +181,7 @@ ROWS = r"""
 153|frame|Stilgar shocks the worm with an electric prod|SB||
 154|frame|"…riding the worm"|SB||
 155|board|Sequence 56: riding the worm|SB||
-156|vision|The Harkonnen parade chariot|IS|baron|Matched to the screenplay's parade by its contents. The match is likely, not certain.
+156|vision|The Imperial Palace: walls of fruit, birds, women and animals in gold|IS|emperor|Matched by its contents to the screenplay's picture of the gold Imperial Palace in scene 27, whose walls show fruit, birds, women and animals sculptured in gold, with Leto's party at the door. The match is likely, not certain. This edition first placed it, wrongly, in scene 84.
 157|board|Sequences 58–59. Stilgar: "We welcome you, Muad'Dib."|SB|paul|
 158|machine|Dazzle-painted hull|F||
 159|giger|Harkonnen castle, the dome|G||
@@ -376,7 +376,7 @@ ROWS = r"""
 348|giger|Sketch sheet, "Schloss Harkonnen": the folding blade|G||
 349|giger|Sketch sheet: dome, drawbridge and notes|G||
 350|giger|Sketch sheet: wings and spires|G||
-351|vision|A ship before the barrier of the galaxy|IS||Matched to the screenplay's galaxy barrier by its contents. The match is likely, not certain.
+351|vision|Paul in his bedroom: the fish bed and the hunter-seeker|IS|paul|Matched by its contents to the screenplay's picture of Paul facing the hunter-seeker in scene 56: the sea painted on the walls, the window shaped like a cloud, the bed like a big fish, and the insect in the air. The match is likely, not certain. This edition first placed it, wrongly, in scene 12.
 352|apoc|Ornithopter, pencil, signed R. Cobb|U||Signed by Ron Cobb. Likely from a later Dune production.
 353|design|The Emperor|M|emperor|Identification follows the chart in plate 303.
 354|design|Gurney Halleck|M|gurney|Identification follows the chart in plate 303.
@@ -646,14 +646,15 @@ ILLUS = {
     "Dogmen watching projection": (42, True),
     "Exploding Earth with ships leaving": (47, True),
     "Men fighting the white blobs": (43, True),
-    "Space-ship unable to pass Galaxy barrier": (351, False),
     "Humans in a room with computers behind them": (10, True),
-    "Man fighting machines": (58, False),
     "Dune title card, with two people walking away": (18, True),
     "The spiral prison hole": (46, True),
+    "Exterior of the gold Imperial Palace": (156, False),
     "Clown statue under row of praying mantis": (45, True),
     "Emperor's upside-down room": (74, True),
     "The Harkonnen Castle, figures in a window": (49, True),
+    "Harkonnen orgy": (58, False),
+    "Paul facing the hunter-seeker in his bedroom": (351, False),
     "Baron in gondola, Wanda tortured, Feyd watching, Yueh with bow": (65, True),
     "Ornithopter coming out of caves on a cliff": (54, True),
     "Ornithopter flying over a harvester and spotters": (180, True),
@@ -661,7 +662,6 @@ ILLUS = {
     "The party guests, dogs, musicians, food etc": (61, False),
     "The spice searchers' ballroom, dancing, drinking, musicians": (63, True),
     "Esmer Tuek wresting a hippo, dancers and jugglers": (62, True),
-    "The Harkonnen parade chariot, with the Baron sat on top": (156, False),
     "Jessica on top of Leto's body parts. Paul in the tent.": (67, True),
     # character plates at the front of the screenplay
     "Emperor of the Galaxy": (332, True), "Baron Harkonnen": (333, True),
