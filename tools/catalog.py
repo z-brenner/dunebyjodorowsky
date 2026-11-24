@@ -113,7 +113,7 @@ ROWS = r"""
 85|frame|Jamis, infinitely more cautious|SB||
 86|board|Sequence 19|SB||
 87|color|Colour storyboard: the opening, pinned to a wall|U||
-88|board|Sequence 9|SB||
+88|board|Sequence 9: the blade stops, the caress (second copy)|SB||The same four frames as plate 263, from another scan. Scene 34; first placed, wrongly, in scene 36.
 89|board|Sequence 14|SB|baron,piter|
 90|design|"Duncan Idaho" and "Leto", labelled|M|duncan,leto|
 91|board|Sequence 64: the vision|SB||
@@ -238,7 +238,7 @@ ROWS = r"""
 210|board|Sequence 12|SB||
 211|board|Sequence 12|SB||
 212|board|Sequence 12|SB||
-213|board|Sequence 13|SB||
+213|board|Sequence 13: the Harkonnen castle, its head and its eye|SB||Its captions place it: the "head" of the castle, Feyd and Peter inside the "eye". That is scenes 39 and 40. This edition first placed it, wrongly, at the end of scene 38.
 214|board|Sequence 15: coloured lights play on the wall|SB|baron|
 215|board|Sequence 15, redrawn|SB|baron|
 216|board|The Baron: "…and his son, and his concubine too"|SB|baron,yueh|
@@ -286,8 +286,8 @@ ROWS = r"""
 258|color|Paul falls heavily… dead|U|paul|
 259|color|"I am Paul": Dune covers itself with vegetation|U|paul|
 260|color|The luminous planet leaves the galaxy; FIN|U||
-261|board|Sequence 9|SB||
-262|board|Sequence 9|SB||
+261|board|Sequence 9: the Emperor's gift, Leto's sword and the veils|SB||Its captions place it: "A present from the Emperor", Leto lunges, the veil flies, Jessica's mask falls. That is scene 34. This edition first placed it, wrongly, in scene 36, the Duke's bedroom, for which no storyboard survives in the archive.
+262|board|Sequence 9: the blade stops, the caress|SB||"The blade of the sword stops a few millimetres away", "Caress": the end of scene 34. This edition first placed it, wrongly, in scene 36.
 263|script|Scene 115: the death of old Kynes|J|kynes|
 264|script|Scene 116: the water of life|J|jessica,mother|
 265|script|Scene 117: Jessica's visions|J|jessica|
@@ -688,9 +688,9 @@ PLACE = {
     1: [125, 222, 189, 190, 392, 393, 313, 365, 379, 35, 22, 171, 301],
     20: [227, 228, 380], 22: [236, 71, 321],
     27: [3, 12, 395], 29: [237, 238, 371, 277], 31: [239, 240],
-    32: [246, 247, 248], 33: [250, 197, 251, 252], 34: [437],
-    35: [253, 254, 255, 373], 36: [88, 261, 262], 37: [208], 38: [209, 210, 211, 212, 213],
-    39: [440, 159, 317, 346, 27, 28, 283, 25], 40: [139, 89, 442],
+    32: [246, 247, 248], 33: [250, 197, 251, 252], 34: [261, 262, 88, 437],
+    35: [253, 254, 255, 373], 37: [208], 38: [209, 210, 211, 212],
+    39: [440, 159, 317, 346, 27, 28, 283, 25, 213], 40: [139, 89, 442],
     41: [126, 214, 215, 374, 445], 42: [16, 37, 33, 24, 355, 372, 447],
     43: [217, 218, 20, 40, 219, 284, 400, 116, 77, 410, 406, 370, 354],
     44: [412], 47: [266], 48: [378], 51: [84], 53: [86], 55: [127], 59: [145],
