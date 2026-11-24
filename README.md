@@ -71,7 +71,7 @@ Needs Python 3, Pillow and poppler (`pdfimages`, `pdftotext`). `restore.py` also
 
 ## Publishing
 
-`wrangler.jsonc` publishes the repository root as a static site on Cloudflare Workers (`npx wrangler deploy`). `.assetsignore` keeps `.git`, `tools/` and the docs out of the upload, `_headers` sets image caching, and `404.html` is the not-found page. Pushes to `main` deploy.
+`wrangler.jsonc` publishes the repository root as a static site on Cloudflare Workers (`npx wrangler deploy`). One small Worker, `worker.js`, runs for `/film/*` only: static assets on Workers answer a byte-range request with the whole file, and Safari will not play a video without ranges, so the Worker returns just the bytes asked for. `.assetsignore` keeps `.git`, `tools/` and the docs out of the upload, `_headers` sets image caching, and `404.html` is the not-found page. Pushes to `main` deploy.
 
 ## Rights
 

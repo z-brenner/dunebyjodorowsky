@@ -1,11 +1,15 @@
-// Cloudflare Workers config: publishes this repository as a static site.
+// Cloudflare Workers config: publishes this repository as a static site, with one small Worker for video.
 // `npx wrangler deploy` reads this file. Files listed in .assetsignore are not published.
 {
   "name": "dunebyjodorowsky",
   "compatibility_date": "2026-11-01",
+  // worker.js runs for /film/* only, to answer byte-range requests for video. See the note in that file.
+  "main": "worker.js",
   "assets": {
     "directory": "./",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/film/*"]
   },
   // Matches the logging setting turned on in the Cloudflare dashboard, so a deploy does not switch it off.
   "observability": {
