@@ -156,6 +156,8 @@
   stage.addEventListener("click", function (e) { setZoom(!zoomed, e); });
   stage.addEventListener("pointermove", pan);
   function show(i) {
+    var opening = view.hidden, was = side.contains(document.activeElement) ? document.activeElement.getAttribute("data-v") : null;
+    if (opening) opener = document.activeElement;
     var p = P[i], s; cur = i; setZoom(false); view.hidden = false; document.body.style.overflow = "hidden";
     var isRestored = p.r && p.r[2].length;
     if (!isRestored) showOrig = false;
@@ -177,7 +179,19 @@
     side.innerHTML = '<span class="label">Plate ' + (i + 1) + " of 448</span><h2>" + esc(p.t) + "</h2><dl>" + rows + '</dl><div class="view-nav"><button type="button" class="btn" data-v="prev" aria-label="Previous plate"' + (pos <= 0 ? " disabled" : "") +
       '>←</button><button type="button" class="btn" data-v="next" aria-label="Next plate"' + (pos < 0 || pos >= ctx.length - 1 ? " disabled" : "") + '>→</button><button type="button" class="btn solid" data-v="close">Close</button></div>';
     side.scrollTop = 0;
+    if (opening || was) {                                                  /* keyboard focus goes into the viewer and stays on the control just used */
+      var to = (was && $('[data-v="' + was + '"]:not([disabled])', side)) || $('[data-v="close"]', side);
+      if (to) to.focus({ preventScroll: true });
+    }
   }
+  var opener = null;
+  view.addEventListener("keydown", function (e) {                          /* Tab cycles inside the viewer */
+    if (e.key !== "Tab") return;
+    var f = $$("a[href], button:not([disabled])", side), a = document.activeElement; if (!f.length) return;
+    if (!side.contains(a)) { e.preventDefault(); f[0].focus(); }
+    else if (e.shiftKey && a === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && a === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
   function step(d) { var pos = ctx.indexOf(cur) + d; if (pos >= 0 && pos < ctx.length) location.hash = "plate-" + (ctx[pos] + 1); }
   function closeView() { location.hash = back; }
   side.addEventListener("click", function (e) {
@@ -291,7 +305,11 @@
     rendered = back = id;
     var m = /^ch-(\d+)$/.exec(id);
     var sm = /^shot-(\d+)$/.exec(id), side = $(".shot-side"), keep = sm && side && +side.dataset.sc === SHOTS[+sm[1] - 1].sc ? side.scrollTop : 0;
+    var ae = document.activeElement, refocus = null;
+    if (sm && ae && ae.closest && ae.closest(".shot-stage")) refocus = ae.matches("[data-auto]") ? "[data-auto]" : ae.closest(".shot-nav") ? '.shot-nav a[aria-label="' + ae.getAttribute("aria-label") + '"]' :
+      ae.closest(".shot-jump") ? ".shot-jump a:" + (ae.previousElementSibling ? "last-child" : "first-child") : ae.closest(".shot-map") ? ".shot-map a[aria-current]" : ".shot-stage .pl";
     main.innerHTML = m ? chapter(+m[1] - 1) : sm ? shot(+sm[1]) : id === "art" ? art() : id === "find" ? find() : home();
+    if (refocus) { var to = $(refocus + ":not(.off)") || $(".shot-nav a:not(.off)"); if (to) to.focus({ preventScroll: true }); }
     $$(".bar a[data-nav]").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === (m ? "film" : sm ? "shots" : id)); });
     $("#here").textContent = m ? roman[+m[1] - 1] + " · " + D.chapters[+m[1] - 1].title : sm ? "Shot " + sm[1] + " of " + SHOTS.length : "";
     if (score) score.setMood(moodFor(id));
@@ -306,7 +324,12 @@
       if (ctx.indexOf(i) < 0) ctx = [i];
       show(i); return;
     }
-    if (!view.hidden) { view.hidden = true; document.body.style.overflow = ""; cur = -1; if (h === rendered || h === back) return; }
+    if (!view.hidden) {
+      view.hidden = true; document.body.style.overflow = ""; cur = -1;
+      if (opener && document.contains(opener)) opener.focus({ preventScroll: true });
+      opener = null;
+      if (h === rendered || h === back) return;
+    }
     if ((m = /^scene-(\d+)$/.exec(h))) {
       var id = "ch-" + (chapterOf(+m[1]) + 1); if (rendered !== id) render(id); back = h;
       var el = $("#sc-" + m[1]); if (el) { unfold(el); layout(); el.scrollIntoView(); } return;

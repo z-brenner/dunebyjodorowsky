@@ -5,7 +5,7 @@
   --ink: #0d0b0e;
   --ink-2: #18141a;
   --foil: #d9aa4c;
-  --foil-dim: #86682f;
+  --foil-dim: #9c7b3c;
   --paper: #efe7d6;
   --paper-dim: #a79c88;
   --mat: #f7f4ec;
@@ -53,7 +53,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .hero { padding-block: clamp(36px, 7vw, 96px) clamp(30px, 5vw, 60px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 30px clamp(24px, 4vw, 64px); align-items: center; max-width: 1400px; margin: 0 auto; }
 .hero-text { display: grid; gap: 24px; justify-items: start; min-width: 0; }
 .hero-art { background: var(--mat); padding: clamp(8px, 1.1vw, 16px); min-width: 0; }
-.hero-art figcaption { font: 400 11.5px var(--f-type); color: #7b6f5e; padding-top: 8px; }
+.hero-art figcaption { font: 400 11.5px var(--f-type); color: #75695a; padding-top: 8px; }
 .credits { display: grid; gap: .5em; font: 400 clamp(12px, 1.2vw, 15px)/1.5 var(--f-type); text-transform: lowercase; color: var(--paper-dim); }
 .credits strong { font: 400 clamp(96px, 15vw, 230px)/.82 var(--f-stamp); letter-spacing: .03em; text-transform: uppercase; color: var(--foil); margin: .02em 0 .06em -.03em; }
 .chapters { list-style: none; padding: 0; margin: 0 auto; max-width: 1400px; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 34px 22px; }
@@ -159,7 +159,7 @@ mark { background: var(--foil); color: var(--ink); padding: 0 1px; }
 .plate.k-design img, .plate.k-vision img, .plate.k-script img { max-height: 78vh; width: auto; margin: 0 auto; }
 .plate figcaption { display: grid; grid-template-columns: 3em minmax(0, 1fr); gap: 8px; padding-top: 10px; font: 400 13px/1.4 var(--f-type); }
 .plate figcaption b { font: 400 20px/1 var(--f-stamp); color: var(--cloth); }
-.plate figcaption small { display: block; font-size: 11px; line-height: 1.45; letter-spacing: .02em; color: #7b6f5e; padding-top: 2px; }
+.plate figcaption small { display: block; font-size: 11px; line-height: 1.45; letter-spacing: .02em; color: #75695a; padding-top: 2px; }
 .ch-nav { max-width: 1500px; margin: 0 auto; padding-block: 44px 90px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); }
 
 /* the art */
