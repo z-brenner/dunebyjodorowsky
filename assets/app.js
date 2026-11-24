@@ -109,7 +109,7 @@
       return '<div class="fm-ch"><b>' + roman[k] + "</b><div>" + cells + "</div></div>";
     }).join("");
     return '<section class="hero gut"><div class="hero-text">' + CREDITS + '<p class="lede">The film Alejandro Jodorowsky prepared in the mid-1970s and never shot, told here from what survives of it: the early draft of the screenplay, and the drawings and paintings made for it.</p>' +
-      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shots">Shot by shot</a><a class="btn" href="#watch">Watch the opening shot</a>' + (ls && AT[lastStep] > 1 ? '<a class="btn" href="#' + lastStep + '">Continue shot by shot · ' + (ls.sh ? "shot " + ls.n : sceneName(ls.sc).toLowerCase()) + "</a>" : "") + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
+      '<p class="starts"><a class="btn solid" href="#ch-1">Begin</a>' + '<a class="btn" href="#shots">Shot by shot</a><a class="btn" href="#watch">Watch</a>' + (ls && AT[lastStep] > 1 ? '<a class="btn" href="#' + lastStep + '">Continue shot by shot · ' + (ls.sh ? "shot " + ls.n : sceneName(ls.sc).toLowerCase()) + "</a>" : "") + (at ? '<a class="btn" href="#scene-' + at + '">Continue at scene ' + at + "</a>" : "") + '</p></div><figure class="hero-art"><a class="pl" href="#plate-172" data-i="171">' + img(171, true, "(max-width: 860px) 94vw, 50vw") + "</a><figcaption>Plate 172 · Chris Foss · " + state(171) + "</figcaption></figure></section>" +
       '<section class="gut"><ol class="chapters">' + D.chapters.map(function (c, k) {
         return '<li><a href="#ch-' + (k + 1) + '"><span class="ch-pic">' + img(c.key, k < 3, "(max-width: 600px) 94vw, 320px") + '</span><span class="ch-no">' + roman[k] + "</span><h2>" + esc(c.title) + "</h2><p>" + esc(c.text) + "</p><small>Scenes " + c.a + (c.b > c.a ? "–" + c.b : "") + "</small></a></li>";
       }).join("") + "</ol></section>" +
@@ -284,17 +284,28 @@
   document.addEventListener("visibilitychange", armAuto);
 
   /* ---------- watch: film made from the materials ---------- */
+  var FILMS = [
+    { id: "opening", title: "The opening shot", len: "1 min 52 s", from: "Sequence 1, “un seul plan séquence / one continuous shot”", plate: 125, link: "See the 24 frames one by one",
+      text: "The storyboard draws the film’s opening as one unbroken shot across the galaxy, in 24 frames. This is that shot, moving: the camera travels into each drawing and the next one surfaces where the storyboard says it should.",
+      how: "In most frames the storyboard rules a small rectangle to show where the camera goes next; the film pushes into that rectangle while the next drawing fades up inside it. Eight frames carry no rectangle, and there the path into the next frame is this edition’s reading. The captions are the storyboard’s own English lines." },
+    { id: "harkonnen", title: "The Harkonnen castle", len: "1 min 47 s", from: "Scenes 39 and 40 of the screenplay", scene: 39, link: "Read the two scenes",
+      text: "The approach to the castle, and Peter and Feyd at chess on its balcony. The words are the screenplay’s; the pictures are the storyboard’s, with one drawing from the illustrated screenplay.",
+      how: "Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s. The pan up the castle and the push toward its head follow camera notes written on the drawing. Three of the frames survive only as a small scan and look soft." }
+  ];
   function watchPage() {
-    return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>The opening shot</h1>' +
-      '<p class="lede">The storyboard draws the film’s opening as one unbroken shot across the galaxy, in 24 frames. This is that shot, moving: the camera travels into each drawing and the next one surfaces where the storyboard says it should.</p>' +
-      '<video controls playsinline preload="metadata" poster="film/opening.jpg" src="film/opening.mp4"></video>' +
-      '<p class="watch-cap">1 min 52 s, with sound · Sequence 1, “un seul plan séquence / one continuous shot” · <a href="#shot-' + (SHOT_OF[125] || 1) + '">See the 24 frames one by one</a></p>' +
+    return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>Watch</h1>' +
+      '<p class="lede">Pieces of the film, made from what survives of it: the production’s own drawings set in motion under the screenplay’s own words. No film was shot, and nothing here was drawn or generated to fill a gap.</p>' +
+      FILMS.map(function (f) {
+        return '<article class="film-item" id="film-' + f.id + '"><h2>' + esc(f.title) + '</h2><p class="film-text">' + f.text + "</p>" +
+          '<video controls playsinline preload="metadata" poster="film/' + f.id + '.jpg" src="film/' + f.id + '.mp4"></video>' +
+          '<p class="watch-cap">' + f.len + ", with sound · " + f.from + ' · <a href="#' + (f.scene ? "scene-" + f.scene : "shot-" + (SHOT_OF[f.plate] || 1)) + '">' + f.link + "</a></p>" +
+          '<p class="film-how"><b>How it was made</b>' + f.how + "</p></article>";
+      }).join("") +
       '<div class="notes-grid">' +
-      "<div><h3>What is the storyboard’s</h3><p>All 24 drawings, by Jean Giraud (Moebius), from plates 126 and 223, and the captions under the picture, which are the storyboard’s own English lines. Nothing was redrawn, coloured or generated.</p></div>" +
-      "<div><h3>What this edition made</h3><p>The movement. In most frames the storyboard rules a small rectangle to show where the camera goes next; the film pushes into that rectangle while the next drawing fades up inside it. The speed, the soft focus on lines as they pass, the paper tone and grain, the titles and the sound are this edition’s.</p></div>" +
-      "<div><h3>Where it guesses</h3><p>Eight of the 24 frames carry no rectangle. For those, which detail leads into the next frame is this edition’s reading. The second sheet survives only as a small scan, so its drawings are enlarged by software and look softer than the first twelve.</p></div>" +
-      "<div><h3>The sound</h3><p>A recording of this site’s generated score in its first-chapter mood: a drone, wind and bell notes. It is not music made for the film.</p></div>" +
-      "<div><h3>What it is not</h3><p>Footage. No film was shot. This is an animatic: the storyboard set in motion the way it describes itself, and no more than that.</p></div>" +
+      "<div><h3>What is the production’s</h3><p>Every picture, and every word under one. The drawings are the storyboard’s, by Jean Giraud (Moebius) from Jodorowsky’s shot list, and the illustrated screenplay’s. Nothing was redrawn or coloured.</p></div>" +
+      "<div><h3>What this edition made</h3><p>The movement of the camera, the cutting from one picture to the next, the timing, the paper tone and grain, the titles, and the choice of which picture goes with which line.</p></div>" +
+      "<div><h3>The sound</h3><p>A recording of this site’s generated score, in the mood of the chapter each piece belongs to: a drone, wind and bell notes. It is not music made for the film, and there are no voices.</p></div>" +
+      "<div><h3>What it is not</h3><p>Footage. These are animatics: storyboards set in motion the way they describe themselves. Each one says so on its first and last card.</p></div>" +
       "</div></section>";
   }
 
@@ -364,6 +375,8 @@
 
   /* ---------- router ---------- */
   var main = $("#main"), rendered = "", back = "home";
+  /* one film at a time */
+  main.addEventListener("play", function (e) { $$(".watch video").forEach(function (v) { if (v !== e.target) v.pause(); }); }, true);
   function render(id) {
     rendered = back = id;
     var m = /^ch-(\d+)$/.exec(id);
