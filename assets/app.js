@@ -284,6 +284,7 @@
   document.addEventListener("visibilitychange", armAuto);
 
   /* ---------- watch: film made from the materials ---------- */
+  function filmCh(f) { var k = 0; D.chapters.forEach(function (c, i) { if (f.scene >= c.a && f.scene <= c.b) k = i; }); return k; }
   var FILMS = [
     { id: "opening", title: "The opening shot", len: "1 min 52 s", from: "Sequence 1, “un seul plan séquence / one continuous shot”", plate: 125, link: "See the 24 frames one by one",
       text: "The storyboard draws the film’s opening as one unbroken shot across the galaxy, in 24 frames. This is that shot, moving: the camera travels into each drawing and the next one surfaces where the storyboard says it should.",
@@ -303,6 +304,21 @@
     { id: "decision", title: "The decision", len: "1 min 59 s", from: "Scenes 30 and 31 of the screenplay", scene: 30, link: "Read from scene 30",
       text: "The clown statue, and the next day before the Senate: the Emperor takes Dune from Baron Harkonnen and gives it to Duke Leto.",
       how: "The storyboard’s Emperor rises on a throne; the draft seats him in the transparent stomach of a pregnant woman. His statement is one sentence of about seventy words, shown here in five parts, in order and unaltered. Scene 30 has no storyboard, so it plays over the screenplay’s drawing of the hall." },
+    { id: "caladan", title: "Leaving Caladan", len: "3 min 8 s", from: "Scenes 32 and 33 of the screenplay", scene: 32, link: "Read from scene 32",
+      text: "The Atreides leave their planet. Soldiers say goodbye, one of them kisses the ground, and the Guild’s ship, the biggest the human mind can imagine, takes them all in. In the hall of the castle, Jessica sees the Reverend Mother coming and remembers.",
+      how: "The storyboard tells the departure at greater length than the draft, so some frames pass without words: they are moments the draft does not describe. The Guild ship is Chris Foss’s drawing for this sequence. The drawing of the castle has no caption and is placed by what it shows: likely, not certain." },
+    { id: "jessica", title: "Jessica", len: "3 min 30 s", from: "Scenes 34 and 35 of the screenplay", scene: 34, link: "Read from scene 34",
+      text: "What Jessica remembers. She was brought to Duke Leto veiled, a gift from the Emperor, and he unveiled her with his sword. Before that, in the temple of the Bene Gesserit, she was told whose child to bear.",
+      how: "The storyboard puts the temple before the gift; the draft, followed here, puts the gift first. Each line sits under the frame whose own caption describes it. The Reverend Mother’s longest sentence is shown in three parts, in order and unaltered." },
+    { id: "blood", title: "The drop of blood", len: "2 min 35 s", from: "Scenes 36 and 37 of the screenplay", scene: 36, link: "Read from scene 36",
+      text: "The Duke’s bedroom, and how Paul was conceived: from a drop of the Duke’s blood. The screenplay is explicit here, and its words are shown as typed.",
+      how: "No storyboard for the bedroom is in the archive, so scene 36 is told in the script’s words alone, on black. The storyboard’s eleventh sequence then follows the drop of blood, frame by frame." },
+    { id: "trap", title: "Dune is a trap", len: "2 min 52 s", from: "Scene 38 of the screenplay, first part", scene: 38, link: "Read the scene",
+      text: "Jessica and the Reverend Mother. She was ordered to bear a girl and bore a boy; now the boy must be tested.",
+      how: "The storyboard has no frames for Jessica’s memory of Leto, so two of Moebius’s costume designs stand in for it. They are designs, not shots, and the end card says so. Two frames are taken straight from the sheet, because they were never cut out singly." },
+    { id: "gomjabbar", title: "The Gom Jabbar", len: "4 min 46 s", from: "Scene 38 of the screenplay, second part", scene: 38, link: "Read the scene",
+      text: "Paul puts his hand in the box, with a poisoned needle at his neck. Afterwards the Reverend Mother tells him what the Bene Gesserit are looking for, and that his father will die.",
+      how: "Each line sits under the frame whose own caption describes it. Jessica’s return and the Voice have no frame and appear as words on black; the prophecy is set under the Reverend Mother’s costume design." },
     { id: "harkonnen", title: "The Harkonnen castle", len: "1 min 47 s", from: "Scenes 39 and 40 of the screenplay", scene: 39, link: "Read the two scenes",
       text: "The approach to the castle, and Peter and Feyd at chess on its balcony. The words are the screenplay’s; the pictures are the storyboard’s, with one drawing from the illustrated screenplay.",
       how: "Each line sits under the storyboard frame whose own caption describes it; that pairing is this edition’s. The pan up the castle and the push toward its head follow camera notes written on the drawing. Three of the frames survive only as a small scan and look soft." },
@@ -316,9 +332,12 @@
   function watchPage() {
     return '<section class="watch gut"><span class="label">Adapted from the surviving materials</span><h1>Watch</h1>' +
       '<p class="lede">Pieces of the film, made from what survives of it: the production’s own drawings set in motion under the screenplay’s own words. No film was shot, and nothing here was drawn or generated to fill a gap.</p>' +
-      '<p class="film-index">' + FILMS.map(function (f) { return '<a class="btn" href="#watch" data-scroll="film-' + f.id + '">' + esc(f.title) + "<small>" + f.len + "</small></a>"; }).join("") + "</p>" +
+      '<div class="film-index">' + D.chapters.map(function (c, k) {
+        var fs = FILMS.filter(function (f) { return filmCh(f) === k; });
+        return fs.length ? '<div class="film-ch"><span class="label">' + roman[k] + " · " + esc(c.title) + "</span><p>" + fs.map(function (f) { return '<a class="btn" href="#watch" data-scroll="film-' + f.id + '">' + esc(f.title) + "<small>" + f.len + "</small></a>"; }).join("") + "</p></div>" : "";
+      }).join("") + "</div>" +
       FILMS.map(function (f) {
-        return '<article class="film-item" id="film-' + f.id + '"><h2>' + esc(f.title) + '</h2><p class="film-text">' + f.text + "</p>" +
+        return '<article class="film-item" id="film-' + f.id + '"><span class="label">Chapter ' + roman[filmCh(f)] + " · " + esc(D.chapters[filmCh(f)].title) + "</span><h2>" + esc(f.title) + '</h2><p class="film-text">' + f.text + "</p>" +
           '<video controls playsinline preload="metadata" poster="film/' + f.id + '.jpg" src="film/' + f.id + '.mp4"></video>' +
           '<p class="watch-cap">' + f.len + ", with sound · " + f.from + ' · <a href="#' + (f.scene ? "scene-" + f.scene : "shot-" + (SHOT_OF[f.plate] || 1)) + '">' + f.link + "</a></p>" +
           '<p class="film-how"><b>How it was made</b>' + f.how + "</p></article>";
