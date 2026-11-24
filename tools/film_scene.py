@@ -10,7 +10,7 @@ rendered: if it is not word for word in the scene it claims to come from, the bu
 
 usage: film_scene.py <name> <fonts dir> <out dir> [--preview | --stills]
 """
-import json, math, os, subprocess, sys
+import json, math, os, re, subprocess, sys
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 
@@ -24,7 +24,8 @@ GOLD, PAPER_TXT, DIM, BOARD = (217, 170, 76), (236, 226, 204), (156, 123, 60), (
 LIMIT = 25 * 1024 * 1024                  # the host serves no file larger than this
 
 # A shot: (source, camera, lines[, seconds to hold a shot that has no words; 3 if not given])
-#   source  ('plate', index)                    a whole restored plate, art/NNN.webp
+#   source  ('plate', index[, (l, t, r, b)])    a whole restored plate, art/NNN.webp, or the part of it inside
+#                                               its drawn border, as fractions of the plate
 #           ('frame', index, n[, (l, t, r, b)]) a frame cut from a sheet, frames/NNN-KK.webp. The drawing
 #                                               inside its ruled border is found by itself, or given in pixels
 #           ('closeup', index, n)               the same, for a sheet whose frames were found one at a time
@@ -34,7 +35,35 @@ LIMIT = 25 * 1024 * 1024                  # the host serves no file larger than 
 #           as fractions of the picture: left, top, width. Height follows from the screen's shape.
 #   lines   [(speaker or None, text)]  words of the screenplay, unaltered.
 #           'SCENE' marks a slate. 'BOARD' marks a caption printed on the storyboard, not the script.
+#           ('NUM', n) shows nothing itself: from here on, the label above the picture names scene n.
+#   T(scene, k) fetches block k of a scene from assets/script.js, so long passages are not retyped;
+#   T(scene, k, a, b) fetches its sentences a to b. J(...) joins fetched pieces into one line.
 F, C = 'frame', 'closeup'
+
+
+def _script():
+    raw = open(os.path.join(REPO, 'assets', 'script.js'), encoding='utf-8').read()
+    return json.loads(raw[raw.index('{'):raw.rindex('}') + 1])
+
+
+SCRIPT = {sc['n']: [b for b in sc['b'] if b[0] in 'adt'] for sc in _script()['scenes']}
+
+
+def T(scene, k, a=None, b=None):
+    blk = SCRIPT[scene][k]; text = blk[-1]
+    if a is not None: text = ' '.join(re.split(r'(?<=[.!?])\s+', text)[a:b])
+    return (blk[1] if blk[0] == 'd' else None, text)
+
+
+def J(*parts):
+    return (parts[0][0], ' '.join(x[1] for x in parts))
+
+
+# the illustrated screenplay's pictures, inside their drawn borders
+P194, P45, P40, P8 = ('plate', 193, (.235, .145, .75, .89)), ('plate', 44, (.023, .036, .974, .959)), ('plate', 39, (.042, .047, .965, .929)), ('plate', 7, (.025, .038, .973, .955))
+P42, P18, P43 = ('plate', 41, (.036, .066, .963, .944)), ('plate', 17, (.044, .045, .957, .942)), ('plate', 42, (.056, .05, .959, .929))
+P48, P44, P11 = ('plate', 47, (.028, .04, .971, .964)), ('plate', 43, (.033, .034, .963, .936)), ('plate', 10, (.03, .038, .971, .961))
+ALONE = ('text',)
 EDITS = {
     'harkonnen': {
         'title': 'THE HARKONNEN CASTLE', 'sub': 'scenes 39 and 40, from the screenplay and the storyboard', 'mood': 3, 'scenes': [39, 40],
@@ -65,6 +94,60 @@ EDITS = {
             ((F, 89, 7, (26, 27, 857, 374)), None, [('Peter', 'Lost Dune ?')]),
             ((F, 89, 8, (28, 27, 858, 373)), None, [(None, 'And he bursts out laughing.')]),
             ((F, 89, 9, (24, 28, 772, 374)), None, [], 4.2),
+        ],
+    },
+    'museum': {
+        'title': 'THE MUSEUM OF MAN', 'sub': 'scenes 1 to 9, from the screenplay and its own pictures', 'mood': 0, 'scenes': list(range(1, 10)),
+        'pictures': ['The pictures are the illustrated screenplay\u2019s own. Their artist is not credited in the source.'],
+        'end': ['Scenes 1 to 9 of the early draft. Plates 194, 45, 40, 8, 42, 18 and 43.',
+                'Each picture is the one the typescript calls for at that scene, except plate 45, the ship: it belongs to scene 1 and is shown under scene 3.',
+                'The typescript\u2019s pictures for scenes 2 to 5 are not in the archive, so those scenes are shown as words.',
+                'Edit, movement, timing, titles and sound: this edition. Unofficial; the art remains the artists\u2019.'],
+        'shots': [
+            (P194, [(0.0, 0.10, 1.0), (0.0, 0.38, 1.0)], [('NUM', 1), T(1, 0)]),
+            (ALONE, None, [('NUM', 2), T(2, 0)]),
+            (P45, [(0.0, 0.15, 1.0), (0.08, 0.20, 0.84)], [('NUM', 3), T(3, 0)]),
+            (ALONE, None, [('NUM', 4), T(4, 0)]),
+            (ALONE, None, [('NUM', 5), J(T(5, 0), T(5, 1))]),
+            (P40, [(0.34, 0.10, 0.66), (0.0, 0.08, 0.70)], [('NUM', 6), T(6, 0)]),
+            (P8, [(0.42, 0.0, 0.58), (0.50, 0.02, 0.50)], [('NUM', 7), T(7, 0)]),
+            (P8, [(0.0, 0.28, 0.62), (0.0, 0.13, 1.0)], [('NUM', 8), T(8, 0)]),
+            (P42, [(0.0, 0.14, 1.0), (0.05, 0.17, 0.90)], [('NUM', 9), T(9, 0)]),
+            (P42, [(0.0, 0.30, 0.90), (0.0, 0.52, 0.62)], [T(9, 1)]),
+            (P42, [(0.20, 0.20, 0.80), (0.30, 0.24, 0.70)], [T(9, 2)]),
+            (P42, [(0.30, 0.24, 0.70), (0.62, 0.45, 0.38)], [T(9, 3)]),
+            (P18, [(0.0, 0.20, 1.0), (0.0, 0.25, 0.90)], [T(9, 4)]),
+            (P18, [(0.0, 0.27, 0.90), (0.20, 0.60, 0.52)], [T(9, 5)]),
+            (P18, [(0.20, 0.60, 0.52), (0.0, 0.02, 0.62)], [J(T(9, 6), T(9, 7))]),
+            (P18, [(0.0, 0.02, 0.62), (0.10, 0.03, 0.42)], [T(9, 8), T(9, 9)]),
+            (P43, [(0.0, 0.0, 0.60), (0.0, 0.05, 0.50)], [T(9, 10, 0, 3)]),
+            (P43, [(0.0, 0.12, 0.62), (0.38, 0.10, 0.62)], [T(9, 10, 3, 4)]),
+            (P43, [(0.10, 0.30, 0.90), (0.0, 0.18, 1.0)], [J(T(9, 11), T(9, 12))]),
+        ],
+    },
+    'history': {
+        'title': 'THE HISTORY OF MAN', 'sub': 'scenes 10 to 14: what the robot projects', 'mood': 0, 'scenes': list(range(10, 15)),
+        'pictures': ['The pictures are the illustrated screenplay\u2019s own. Their artist is not credited in the source.'],
+        'end': ['Scenes 10 to 14 of the early draft. Plates 48, 44 and 11.',
+                'Each picture is the one the typescript calls for at that scene. Plate 48 is also shown under the first lines of scene 11.',
+                'The typescript\u2019s pictures for scenes 12 and 14 are not in the archive, so those scenes are shown as words.',
+                'Edit, movement, timing, titles and sound: this edition. Unofficial; the art remains the artists\u2019.'],
+        'shots': [
+            (P48, [(0.30, 0.0, 0.70), (0.38, 0.05, 0.60)], [('NUM', 10), J(T(10, 0), T(10, 1))]),
+            (P48, [(0.30, 0.10, 0.70), (0.0, 0.42, 0.62)], [T(10, 2)]),
+            (P48, [(0.0, 0.13, 1.0), (0.04, 0.15, 0.92)], [T(10, 3)]),
+            (P48, [(0.0, 0.42, 0.62), (0.10, 0.25, 0.80)], [('NUM', 11), J(T(11, 0), T(11, 1)), T(11, 2)]),
+            (P44, [(0.0, 0.20, 1.0), (0.20, 0.30, 0.70)], [T(11, 3)]),
+            (P44, [(0.20, 0.30, 0.70), (0.42, 0.50, 0.56)], [T(11, 4)]),
+            (ALONE, None, [('NUM', 12), T(12, 0)]),
+            (ALONE, None, [T(12, 1)]),
+            (P11, [(0.40, 0.0, 0.60), (0.30, 0.25, 0.70)], [('NUM', 13), T(13, 0, 0, 1)]),
+            (P11, [(0.05, 0.55, 0.66), (0.10, 0.56, 0.60)], [T(13, 0, 1, 2)]),
+            (P11, [(0.0, 0.10, 0.50), (0.0, 0.12, 0.36)], [T(13, 0, 2, 3)]),
+            (P11, [(0.04, 0.15, 0.92), (0.0, 0.17, 1.0)], [T(13, 1)]),
+            (ALONE, None, [('NUM', 14), T(14, 0)]),
+            (ALONE, None, [T(14, 1), T(14, 2)]),
+            (ALONE, None, [T(14, 3), T(14, 4)]),
         ],
     },
     'robot': {
@@ -140,7 +223,7 @@ def check_words(E):
     script = json.loads(raw[raw.index('{'):raw.rindex('}') + 1])
     flat = lambda s: ' '.join(s.replace('’', "'").split())
     text = flat(' '.join(' '.join(str(x) for x in b[1:]) for sc in script['scenes'] if sc['n'] in E['scenes'] for b in sc['b'] if b[0] in 'adt'))
-    bad = [tx for _, _, lines, *_ in E['shots'] for sp, tx in lines if sp not in ('SCENE', 'BOARD') and flat(tx) not in text]
+    bad = [tx for _, _, lines, *_ in E['shots'] for sp, tx in lines if sp not in ('SCENE', 'BOARD', 'NUM') and flat(tx) not in text]
     if bad: sys.exit('not in the screenplay as typed:\n  ' + '\n  '.join(bad))
 
 
@@ -161,7 +244,10 @@ def load(src):
     """The picture as float BGR, and a short label saying what it is."""
     if src[0] == 'text': return None, 'THE SCRIPT ALONE · NO PICTURE SURVIVES'
     if src[0] == 'plate':
-        return cv2.imread(os.path.join(REPO, 'art', f'{src[1]:03d}.webp')).astype(np.float32), f'PLATE {src[1] + 1}'
+        im = cv2.imread(os.path.join(REPO, 'art', f'{src[1]:03d}.webp'))
+        if len(src) > 2:
+            h, w = im.shape[:2]; l, t, r, b = src[2]; im = im[int(t * h):int(b * h), int(l * w):int(r * w)]
+        return im.astype(np.float32), f'PLATE {src[1] + 1}'
     kind, i, n = src[:3]
     im = cv2.imread(os.path.join(REPO, 'frames', f'{i:03d}-{n:02d}.webp'))
     l, t, r, b = src[3] if len(src) > 3 else inner(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY))
@@ -214,17 +300,20 @@ def layer(draw):
 
 
 def card(lines, fonts, gap=22):
-    """lines: [(text, font file, size, colour)], centred on a black screen."""
+    """lines: [(text, font file, size, colour)], centred on a black screen. A line too wide for the screen is wrapped."""
+    lines = [(part, f, sz, c) for t, f, sz, c in lines for part in wrap(t, font(fonts, f, sz), W - 200)]
     def draw(d):
         boxes = [d.textbbox((0, 0), t, font=font(fonts, f, s)) for t, f, s, _ in lines]
         y = (H - sum(b[3] - b[1] for b in boxes) - gap * (len(lines) - 1)) // 2
         for (t, f, s, c), b in zip(lines, boxes):
+            if b[2] - b[0] > W - 80: sys.exit('a card line is wider than the screen: ' + t)
             d.text(((W - (b[2] - b[0])) // 2 - b[0], y - b[1]), t, font=font(fonts, f, s), fill=c + (255,)); y += b[3] - b[1] + gap
     return layer(draw)
 
 
 def words_layer(speaker, text, label, fonts, alone=False):
     """The words under the picture, and the label above it. alone: no picture, so the words take the screen."""
+    text = text.replace("'", '\u2019')                    # typewriter apostrophes are shown as printed ones
     def draw(d):
         size = 46 if alone else 34
         f = font(fonts, 'CourierPrime.ttf', size); b = font(fonts, 'CourierPrime-Bold.ttf', size); small = font(fonts, 'CourierPrime-Bold.ttf', 20)
@@ -274,10 +363,14 @@ def main():
     check_words(E)
 
     # the timeline: when each shot starts, and which words are up when
-    shots, cues, t = [], [], 0.0
+    shots, cues, t, scene_no = [], [], 0.0, None
     for src, cam, lines, *hold in E['shots']:
         im, label = load(src)
         alone = im is None
+        for sp, tx in lines:
+            if sp == 'NUM': scene_no = tx
+        lines = [x for x in lines if x[0] != 'NUM']
+        if scene_no is not None: label = f'SCENE {scene_no} \u00b7 ' + label
         pieces = []
         for sp, tx in lines:
             for p in ([tx] if sp in ('SCENE', 'BOARD') else sentences(tx, 40 if alone else 22 if sp else 26, not alone)): pieces.append((sp, p))
@@ -348,14 +441,26 @@ def main():
         out = os.path.join(out_dir, name + '-stills.jpg'); cv2.imwrite(out, sheet, [cv2.IMWRITE_JPEG_QUALITY, 86]); print('wrote', out); return
 
     out = os.path.join(out_dir, name + '-silent.mp4')
+    # Up to two minutes, constant quality. Up to about three, a little more compression. Longer than that, a
+    # near-lossless master is rendered first and then encoded in two passes to a size the host will serve.
+    sized = not preview and total > 170
+    first = os.path.join(out_dir, name + '-master.mp4') if sized else out
+    quality = ['-preset', 'veryfast', '-crf', '14'] if sized else ['-preset', 'slow', '-crf', '30' if preview else '24' if total <= 120 else '26']
     enc = subprocess.Popen(['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{W}x{H}', '-r', str(FPS), '-i', '-',
-                            '-c:v', 'libx264', '-preset', 'slow', '-crf', '30' if preview else '24' if total <= 120 else '26', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], stdin=subprocess.PIPE)
+                            '-c:v', 'libx264'] + quality + ['-pix_fmt', 'yuv420p', '-movflags', '+faststart', first], stdin=subprocess.PIPE)
     step = 6 if preview else 1
     for n in range(0, int(round(total * FPS)), step):
         buf = compose(n / FPS).tobytes()
         for _ in range(step): enc.stdin.write(buf)
         if n % (FPS * 10) == 0: print('rendered', round(n / FPS), 'of', round(total), 's', flush=True)
     enc.stdin.close(); enc.wait()
+    if sized:
+        rate = int(min(1300, LIMIT * 0.86 * 8 / 1000 / total - 128))          # kilobits a second, leaving room for the sound
+        log = os.path.join(out_dir, name + '-2pass')
+        for n, sink in ((1, ['-f', 'null', os.devnull]), (2, ['-movflags', '+faststart', out])):
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', first, '-c:v', 'libx264', '-preset', 'slow', '-b:v', f'{rate}k',
+                            '-pass', str(n), '-passlogfile', log, '-pix_fmt', 'yuv420p', '-an'] + sink, check=True)
+        print('encoded to', rate, 'kbit/s', flush=True)
     size = os.path.getsize(out)
     print('wrote', out, round(total, 1), 's', round(size / 1e6, 1), 'MB', '' if preview or size < LIMIT * 0.9 else '  TOO LARGE FOR THE HOST ONCE SOUND IS ADDED')
 
