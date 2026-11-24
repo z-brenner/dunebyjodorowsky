@@ -14,7 +14,7 @@ import math, os, subprocess, sys
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 
-REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..') if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frames')) else '/home/user/dunebyjodorowsky'
+REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 W, H, FPS = 1920, 1080, 24
 PW, PH, PY = 1920, 800, 96                       # the picture: a 2.4 to 1 window, with room for the caption below
 PAPER = np.array([226, 236, 240], np.float32)    # BGR: warm paper

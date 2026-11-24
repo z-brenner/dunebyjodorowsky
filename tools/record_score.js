@@ -2,6 +2,7 @@
 // usage: node record_score.js <seconds> <chapter index 0-9> <out.webm>
 const { chromium } = require('playwright');
 const fs = require('fs');
+const path = require('path');
 (async () => {
   const seconds = +process.argv[2], mood = +process.argv[3], out = process.argv[4];
   const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
@@ -16,7 +17,7 @@ const fs = require('fs');
       get destination() { return this.__rec; }
     };
   });
-  await pg.addScriptTag({ content: fs.readFileSync('/home/user/dunebyjodorowsky/assets/music.js', 'utf8') });
+  await pg.addScriptTag({ content: fs.readFileSync(path.join(__dirname, '..', 'assets', 'music.js'), 'utf8') });
   const b64 = await pg.evaluate(async ([seconds, mood]) => {
     window.DuneScore.setMood(mood);
     window.DuneScore.toggle();
