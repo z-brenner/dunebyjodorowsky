@@ -90,6 +90,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .watch h1 { font-size: clamp(36px, 5vw, 64px); color: var(--foil); }
 .watch video { width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000; border: 1px solid var(--line); display: block; }
 .watch-cap { font: 400 12.5px/1.5 var(--f-type); color: var(--paper-dim); }
+.film-item { display: grid; gap: 12px; padding-top: 30px; margin-top: 12px; border-top: 1px solid var(--line); scroll-margin-top: calc(var(--bar-h) + 8px); }
+.film-item h2 { font-size: clamp(28px, 3.4vw, 44px); }
+.film-text { font-size: 16.5px; line-height: 1.5; max-width: 70ch; }
+.film-how { font-size: 14.5px; line-height: 1.5; color: var(--paper-dim); max-width: 78ch; }
+.film-how b { display: block; font: 700 11.5px var(--f-type); letter-spacing: .14em; text-transform: uppercase; color: var(--foil-dim); margin-bottom: 3px; }
 .watch-cap a { color: var(--foil); }
 .watch .notes-grid { margin-top: 26px; padding-top: 26px; border-top: 1px solid var(--line); }
 .watch .notes-grid h3 { font: 700 12px var(--f-type); letter-spacing: .14em; text-transform: uppercase; color: var(--foil); margin-bottom: 6px; }
