@@ -148,7 +148,7 @@ def m_boom(n, u, sec, pose, w, h):
 
 def fx_boom(u, sec, pose):
     k = max(0.0, 1 - sec / 1.4)
-    return dict(shake=(22 * k * math.sin(pose * 2.7), 16 * k * math.cos(pose * 3.9)), flash=max(0.0, 1 - sec / 0.35))
+    return dict(shake=(22 * k * math.sin(pose * 2.7), 16 * k * math.cos(pose * 3.9)), flash=max(0.0, 1 - sec / 0.45), invert=sec < 0.17)
 
 
 def m_land(n, u, sec, pose, w, h):
@@ -227,6 +227,27 @@ SHOTS = [
 ]
 
 
+# How each shot is dressed. None of this is in the storyboard: the tint of the paper (sky above, sand below), the dust
+# haze, the trail a fast part leaves behind it, and the push of the camera are this edition's, and the cards say so.
+SKY, SAND, HOT = (198, 217, 228), (239, 217, 174), (240, 203, 172)          # RGB
+LOOK = {
+    'orni': dict(tint=(SKY, SAND, .76), zoom=lambda u, t: (1 + .07 * u, .47, .5)),
+    'dive': dict(tint=(SKY, SAND, .93), trail=('orni',), haze=lambda u: .25, zoom=lambda u, t: (1 + .05 * u, .4, .5)),
+    'rise': dict(tint=(SKY, SAND, .83), haze=lambda u: .6 * span(u, .03, .45) * (1 - .5 * span(u, .7, 1)),
+                 zoom=lambda u, t: (1 + .13 * span(u, .04, .2) - .07 * span(u, .55, 1), .6, .6)),
+    'accel': dict(tint=(SKY, SAND, .78), trail=('worm',), haze=lambda u: .35, zoom=lambda u, t: (1 + .06 * u, .45, .5)),
+    'refuse': dict(tint=(SKY, SAND, .86)),
+    'wing': dict(tint=(SKY, SAND, .56), trail=('wing',), zoom=lambda u, t: (1 + .22 * u * u, .43, .48)),
+    'boom': dict(tint=((247, 216, 164), (247, 216, 164), .5), zoom=lambda u, t: (1.22 - .22 * ease(t / .3) + .06 * u, .5, .5)),
+    'land': dict(tint=(HOT, SAND, .90), trail=('craft1', 'craft2'), haze=lambda u: .5 * span(u, .35, .9)),
+    'run': dict(tint=(HOT, SAND, .92), trail=('men',), haze=lambda u: .3),
+    'duke': dict(tint=(HOT, SAND, .90), trail=('body',), haze=lambda u: .45 * span(u, .6, 1)),
+    'menrun': dict(tint=(HOT, SAND, .94), trail=('left', 'right'), haze=lambda u: .3, zoom=lambda u, t: (1 + .08 * u, .5, .6)),
+    'throw': dict(tint=(HOT, SAND, .88), trail=('box',), haze=lambda u: .3, zoom=lambda u, t: (1 + .07 * u, .65, .42)),
+    'takeoff': dict(tint=(HOT, SAND, .84), trail=('worm', 'far'), haze=lambda u: .3 + .35 * u, zoom=lambda u, t: (1 + .10 * span(u, .5, 1), .35, .6)),
+}
+
+
 class Swallow:
     """The screenplay's drawing of the worm at the harvester: the harvester leans and sinks, the teeth turn, the camera closes on the mouth."""
 
@@ -254,8 +275,9 @@ class Swallow:
         a = self.front[:, :, 3:4]; img = img * (1 - a) + self.front[:, :, :3]
         turn = warp(self.im, affine(self.c, angle=9 * math.sin(sec * 2.1) + 14 * span(u, 0.3, 1.0))); d = self.disc[:, :, None]
         img = img * (1 - d) + turn * d
-        k = span(u, 0.42, 0.95)                         # the camera closes on the mouth
-        x, y, ww = 0.0 + 0.13 * k, 0.30 - 0.245 * k, 1.0 - 0.50 * k
+        k = span(u, 0.42, 0.84); dive = span(u, 0.86, 1.0) ** 2          # the camera closes on the mouth, then goes down the throat
+        ww = (1.0 - 0.50 * k) * (1 - 0.86 * dive); hh = ww * self.w * PH / PW / self.h
+        x = (0.13 * k) * (1 - dive) + (0.365 - ww / 2) * dive; y = (0.30 - 0.245 * k) * (1 - dive) + (0.335 - hh / 2) * dive
         shake = span(u, 0.3, 0.5) * (1 - span(u, 0.8, 1.0))
         x0 = x * self.w + 7 * shake * math.sin(pose * 2.7); y0 = y * self.h + 6 * shake * math.cos(pose * 3.9)
         cw = ww * self.w; ch = cw * PH / PW
@@ -303,57 +325,139 @@ def env(n, attack, release):
 
 
 def sfx_track(marks, total):
-    """Every sound is noise or sine waves shaped by hand: there are no recordings in it."""
-    out = np.zeros(int(total * SR) + SR)
-
-    def put(t0, x, gain):
-        i = int(t0 * SR); x = x[:max(0, len(out) - i)]; out[i:i + len(x)] += x * gain
+    """Stereo. Every sound is noise or sine waves shaped by hand: there are no recordings in it."""
+    N = int(total * SR); out = np.zeros((N + SR, 2))
 
     def tt(n): return np.arange(n) / SR
 
-    def rotor(t0, dur, gain, rate=13.0):
-        n = int(dur * SR); t = tt(n); chop = (0.5 + 0.5 * np.sin(2 * np.pi * rate * t)) ** 3
-        put(t0, (noise(n, 90, 900) * chop + 0.5 * np.sign(np.sin(2 * np.pi * 46 * t)) * chop * 0.4) * env(n, 0.4, 0.5), gain)
+    def put(t0, x, gain, pan=0.0):
+        """Place a sound; pan runs from -1 (left) to 1 (right), or from one to another as (start, end)."""
+        i = int(t0 * SR)
+        if i < 0 or i >= len(out): return
+        x = x[:len(out) - i]; n = len(x)
+        p = np.linspace(pan[0], pan[1], n) if isinstance(pan, tuple) else np.full(n, float(pan))
+        th = (p + 1) * np.pi / 4
+        out[i:i + n, 0] += x * gain * np.cos(th); out[i:i + n, 1] += x * gain * np.sin(th)
 
-    def rumble(t0, dur, gain, attack=1.0, release=1.2):
+    def rotor(t0, dur, gain, rate=13.0, rate1=None, pan=0.0, g1=None):
+        n = int(dur * SR); ph = 2 * np.pi * np.cumsum(np.linspace(rate, rate1 or rate, n)) / SR; chop = (0.5 + 0.5 * np.sin(ph)) ** 3
+        put(t0, (noise(n, 90, 900) * chop + 0.2 * np.sign(np.sin(ph * 3.5)) * chop) * env(n, 0.3, 0.4) * np.linspace(1.0, (g1 / gain) if g1 else 1.0, n), gain, pan)
+
+    def rumble(t0, dur, gain, attack=1.0, release=1.2, pan=0.0):
         n = int(dur * SR); t = tt(n); trem = 0.65 + 0.35 * np.sin(2 * np.pi * 7 * t)
         x = noise(n, 25, 160) + 0.6 * noise(n, 160, 520) * trem + 0.5 * sum(np.sin(2 * np.pi * f * t) for f in (41, 55, 62)) / 3
-        put(t0, x * trem * env(n, attack, release), gain)
+        put(t0, x * trem * env(n, attack, release), gain, pan)
 
-    def hiss(t0, dur, gain, attack=0.15):
-        n = int(dur * SR); put(t0, noise(n, 1800, 7000) * env(n, attack, dur * 0.7), gain)
+    def krys(t0, dur, gain, pan=0.0):
+        """The worm's 'vibrating sound': a buzzing tone."""
+        n = int(dur * SR); t = tt(n); buzz = np.sin(2 * np.pi * 37 * t)
+        put(t0, (np.sin(2 * np.pi * 176 * t + 6 * buzz) * (0.6 + 0.4 * np.sin(2 * np.pi * 5.5 * t)) + 0.2 * noise(n, 1500, 4000) * (0.5 + 0.5 * buzz)) * env(n, 0.5, 0.8), gain, pan)
 
-    def boom(t0, gain):
-        n = int(3.5 * SR); t = tt(n); f = 32 + 90 * np.exp(-t * 5)
-        put(t0, np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 1.6) + noise(n, 60, 1800) * np.exp(-t * 2.2) + 0.4 * noise(n, 800, 5000) * np.exp(-t * 6), gain)
+    def roar(t0, dur, gain, pan=0.0):
+        n = int(dur * SR); t = tt(n); trem = 0.6 + 0.4 * np.sin(2 * np.pi * 23 * t)
+        low = np.sin(2 * np.pi * np.cumsum(50 + 220 * np.exp(-t * 0.9)) / SR)
+        put(t0, ((noise(n, 90, 500) + 0.6 * noise(n, 500, 1400) * np.exp(-t * 1.2)) * trem + 0.5 * low) * env(n, 0.25, dur * 0.6), gain, pan)
 
-    def thuds(t0, dur, gain, rate=5.0):
-        for k in range(int(dur * rate)):
-            n = int(0.09 * SR); put(t0 + k / rate + rng.uniform(0, 0.05), noise(n, 80, 700) * np.exp(-tt(n) * 45), gain * rng.uniform(0.6, 1.0))
+    def grains(t0, dur, gain, pan=0.0):
+        """Sand pouring: hiss broken into grains."""
+        n = int(dur * SR); put(t0, noise(n, 2500, 9000) * np.abs(noise(n, 6, 45)) * env(n, min(1.0, dur * 0.3), dur * 0.5), gain, pan)
 
-    def clank(t0, gain):
+    def boom(t0, gain, pan=0.0):
+        n = int(3.5 * SR); t = tt(n)
+        x = np.sin(2 * np.pi * np.cumsum(32 + 90 * np.exp(-t * 5)) / SR) * np.exp(-t * 1.6) + noise(n, 60, 1800) * np.exp(-t * 2.2) + 0.4 * noise(n, 800, 5000) * np.exp(-t * 6)
+        put(t0, x, gain, pan); put(t0 + 0.42, x, gain * 0.3, -0.6); put(t0 + 0.9, x, gain * 0.14, 0.6)      # and its echo off the dunes
+
+    def debris(t0, gain):
+        for _ in range(46):
+            d = rng.exponential(0.7); n = int(0.025 * SR)
+            if d < 2.6: put(t0 + d, noise(n, 1500, 6000) * np.exp(-tt(n) * 160), gain * rng.uniform(0.4, 1.0) * np.exp(-d * 0.8), rng.uniform(-0.8, 0.8))
+
+    def whistle(t0, dur, gain, pan=0.0):
+        n = int(dur * SR); t = tt(n); f = 1700 * (450 / 1700) ** (t / dur) * (1 + 0.012 * np.sin(2 * np.pi * 9 * t))
+        put(t0, np.sin(2 * np.pi * np.cumsum(f) / SR) * env(n, 0.3, 0.25) * (0.4 + 0.6 * t / dur), gain, pan)
+
+    def thump(t0, gain, pan=0.0):
+        n = int(0.45 * SR); t = tt(n)
+        put(t0, np.sin(2 * np.pi * np.cumsum(38 + 40 * np.exp(-t * 14)) / SR) * np.exp(-t * 9) + 0.5 * noise(n, 60, 500) * np.exp(-t * 22), gain, pan)
+
+    def thuds(t0, dur, gain, rate=5.0, pan=(0.0, 0.0)):
+        c = max(1, int(dur * rate))
+        for k in range(c):
+            n = int(0.09 * SR); put(t0 + k / rate + rng.uniform(0, 0.05), noise(n, 80, 700) * np.exp(-tt(n) * 45), gain * rng.uniform(0.6, 1.0), pan[0] + (pan[1] - pan[0]) * k / c)
+
+    def clank(t0, gain, pan=0.0):
         n = int(0.7 * SR); t = tt(n)
-        put(t0, sum(np.sin(2 * np.pi * f * t) * np.exp(-t * d) for f, d in ((523, 9), (811, 12), (1290, 15), (2140, 20))) / 4 + 0.5 * noise(n, 300, 3000) * np.exp(-t * 30), gain)
+        put(t0, sum(np.sin(2 * np.pi * f * t) * np.exp(-t * d) for f, d in ((523, 9), (811, 12), (1290, 15), (2140, 20))) / 4 + 0.5 * noise(n, 300, 3000) * np.exp(-t * 30), gain, pan)
 
-    n = int(total * SR); t = tt(n)
-    put(0, noise(n, 220, 1100) * (0.55 + 0.45 * np.sin(2 * np.pi * 0.13 * t)) * env(n, 2.5, 5.0), 0.10)        # wind, throughout
+    def whoosh(t0, dur, gain, pan=0.0):
+        n = int(dur * SR); x = tt(n) / dur
+        put(t0, (noise(n, 300, 1200) * (1 - x) + noise(n, 1200, 5000) * x) * np.sin(np.pi * x) ** 2, gain, pan)
+
+    def riser(t0, dur, gain, pan=0.0):
+        n = int(dur * SR); x = tt(n) / dur
+        put(t0, (0.5 * np.sin(2 * np.pi * np.cumsum(180 * 8 ** x) / SR) + 0.6 * noise(n, 800, 4000) * x) * x * x * env(n, 0, 0.03), gain, pan)
+
+    def radio(t0, dur, gain, pan=0.0):
+        """A radio opening and closing: a chirp, static, a chirp."""
+        n = int(dur * SR); b = int(0.07 * SR); x = noise(n, 900, 3200) * (0.3 + 0.7 * (noise(n, 3, 14) > 0.1)) * 0.6
+        x[:b] += np.sin(2 * np.pi * 1250 * tt(b)); x[-b:] += np.sin(2 * np.pi * 930 * tt(b))
+        put(t0, x * env(n, 0.01, 0.02), gain, pan)
+
+    def walla(t0, dur, gain):
+        """Men shouting, far off: short bursts of noise shaped like vowels. No words."""
+        for _ in range(int(dur * 2.4)):
+            d = rng.uniform(0.18, 0.45); n = int(d * SR); f1, f2 = rng.uniform(500, 900), rng.uniform(1100, 1900)
+            x = (noise(n, f1 * 0.8, f1 * 1.25) + 0.7 * noise(n, f2 * 0.85, f2 * 1.2)) * (0.6 + 0.4 * np.sin(2 * np.pi * rng.uniform(4, 8) * tt(n))) * env(n, 0.05, 0.12)
+            put(t0 + rng.uniform(0, max(0.1, dur - d)), x, gain * rng.uniform(0.5, 1.0), rng.uniform(-0.7, 0.7))
+
+    def chug(t0, dur, gain, rate=3.2, pan=0.0):
+        """The harvester working."""
+        n = int(dur * SR); put(t0, noise(n, 60, 220) * env(n, 0.3, 0.4), gain * 0.35, pan)
+        for k in range(int(dur * rate)):
+            a = int(0.14 * SR); put(t0 + k / rate, np.sin(2 * np.pi * 55 * tt(a)) * np.exp(-tt(a) * 26), gain, pan)
+            b = int(0.035 * SR); put(t0 + (k + 0.5) / rate, noise(b, 2500, 6000) * np.exp(-tt(b) * 90), gain * 0.6, pan)
+
+    def grind(t0, dur, gain, rate=10.0, pan=0.0):
+        """The teeth turning: a ratchet."""
+        for k in range(int(dur * rate)):
+            n = int(0.04 * SR); lo, hi = ((400, 1800), (700, 2600))[k % 2]
+            put(t0 + k / rate + rng.uniform(0, 0.012), noise(n, lo, hi) * np.exp(-tt(n) * 70), gain * (0.6 + 0.4 * math.sin(k * 0.21)) * min(1.0, k / (rate * 1.5)), pan)
+
+    def groan(t0, dur, gain, pan=0.0):
+        """Metal leaning."""
+        n = int(dur * SR); t = tt(n); ph = 2 * np.pi * np.cumsum(95 + 25 * np.sin(2 * np.pi * 0.35 * t) + 6 * noise(n, 1, 6)) / SR
+        put(t0, (sum(np.sin(k * ph) / k for k in range(1, 6)) * 0.5 + 0.25 * noise(n, 300, 800)) * env(n, 0.6, 0.8), gain, pan)
+
+    def gulp(t0, gain):
+        n = int(1.6 * SR); t = tt(n)
+        put(t0, np.sin(2 * np.pi * np.cumsum(24 + 40 * np.exp(-t * 3)) / SR) * np.exp(-t * 2.2) + 0.6 * noise(n, 40, 300) * np.exp(-t * 4), gain)
+
+    t = tt(N)
+    put(0, noise(N, 220, 1100) * (0.55 + 0.45 * np.sin(2 * np.pi * 0.13 * t)) * env(N, 2.5, 3.0), 0.09, -0.35)      # wind, throughout, a little different in each ear
+    put(0, noise(N, 300, 1500) * (0.55 + 0.45 * np.sin(2 * np.pi * 0.09 * t + 1.7)) * env(N, 2.5, 3.0), 0.07, 0.4)
     m = marks
-    rotor(m['orni'][0], m['orni'][1], 0.42)
-    rotor(m['dive'][0], m['dive'][1], 0.30); rumble(m['dive'][0], m['dive'][1], 0.55)
-    rotor(m['rise'][0], m['rise'][1], 0.16); rumble(m['rise'][0] + 0.3, m['rise'][1] - 0.3, 0.8, attack=2.2); hiss(m['rise'][0] + 0.6, 3.2, 0.5, attack=1.4)
-    rotor(m['accel'][0], m['accel'][1], 0.28); rumble(m['accel'][0], m['accel'][1], 0.6); hiss(m['accel'][0], m['accel'][1], 0.22, attack=1.0)
-    rotor(m['refuse'][0], m['refuse'][1], 0.14, rate=11)
-    rotor(m['wing'][0], m['wing'][1], 0.10, rate=9)
-    boom(m['boom'][0] + 0.05, 1.0)
-    rotor(m['land'][0], m['land'][1], 0.30, rate=15); hiss(m['land'][0] + 1.2, 2.5, 0.35, attack=0.6)
-    thuds(m['run'][0] + 0.3, m['run'][1] - 0.6, 0.35, rate=7)
-    rotor(m['duke'][0], m['duke'][1], 0.45); hiss(m['duke'][0] + 3.5, 2.5, 0.25, attack=1.0)
-    thuds(m['menrun'][0] + 0.2, m['menrun'][1] - 0.5, 0.5, rate=6); rumble(m['menrun'][0], m['menrun'][1], 0.35)
-    clank(m['throw'][0] + 1.3, 0.55); clank(m['throw'][0] + 4.3, 0.55); rumble(m['throw'][0], m['throw'][1], 0.45); rotor(m['throw'][0], m['throw'][1], 0.2)
-    rotor(m['takeoff'][0], m['takeoff'][1], 0.55, rate=17); rumble(m['takeoff'][0], m['takeoff'][1], 0.8, attack=3.0); hiss(m['takeoff'][0] + 3, 4.5, 0.3, attack=2.0)
-    s0, sd = m['swallow']
-    rumble(s0, sd, 1.0, attack=3.5, release=4.0); hiss(s0 + 0.36 * sd, 0.45 * sd, 0.6, attack=2.0); boom(s0 + 0.62 * sd, 0.7)
-    out = out[:n]; out *= 0.89 / np.abs(out).max()
+    a, d = m['orni']; rotor(a, d, 0.22, 12, 14, 0.0, g1=0.5)
+    a, d = m['dive']; whoosh(a, 0.5, 0.3); rotor(a, d, 0.34, pan=(0.2, 0.8), g1=0.18); rumble(a, d, 0.5, pan=-0.4); krys(a + 0.5, d - 0.5, 0.22, -0.4)
+    a, d = m['rise']; rumble(a, d, 0.85, attack=1.5, pan=0.2); thump(a + 0.6, 0.6, 0.2); roar(a + 0.7, 3.6, 0.8, 0.2); grains(a + 0.4, 4.6, 0.5, 0.2); krys(a + 2.5, d - 2.5, 0.25, 0.2); rotor(a, d, 0.12, pan=0.6)
+    a, d = m['accel']; rumble(a, d, 0.6, pan=(0.5, -0.3)); grains(a, d, 0.3, (0.5, -0.3)); krys(a, d, 0.18, (0.5, -0.3)); rotor(a, d, 0.26, pan=-0.5); chug(a, d, 0.18, pan=-0.2)
+    a, d = m['refuse']; chug(a, d, 0.42, pan=-0.3); walla(a + 0.3, d - 0.6, 0.5); radio(a + 0.2, 1.6, 0.25, 0.6); rotor(a, d, 0.14, 11, pan=(0.7, 0.1))
+    a, d = m['wing']; riser(a + 0.3, d - 0.3, 0.45); rotor(a, d, 0.08, 9, 16, g1=0.3)
+    a, d = m['boom']; boom(a + 0.03, 1.0); debris(a + 0.25, 0.5); whistle(a + 0.9, 1.9, 0.22, (0.1, -0.6)); thump(a + 2.85, 0.55, -0.6)
+    a, d = m['land']; radio(a, 1.4, 0.3); whoosh(a + 0.2, 1.4, 0.3, (0.9, 0.1)); rotor(a, d, 0.34, 16, 11, (0.9, 0.2)); thump(a + 3.3, 0.5, 0.2); thump(a + 4.7, 0.4, -0.1); grains(a + 3.0, 2.4, 0.35, 0.3)
+    a, d = m['run']; thuds(a + 0.2, d - 0.4, 0.38, 7, (-0.9, -0.4)); walla(a, d, 0.4); rotor(a, d, 0.16, 10, pan=0.3)
+    a, d = m['duke']; rotor(a, d, 0.5, 15, 10); whoosh(a + 3.6, 1.6, 0.25); thump(a + 5.3, 0.6); grains(a + 4.6, 1.9, 0.35)
+    a, d = m['menrun']; thuds(a + 0.1, d - 0.2, 0.55, 6, (-0.9, -0.3)); thuds(a + 0.25, d - 0.4, 0.55, 6, (0.9, 0.3)); rumble(a, d, 0.45, pan=0.5); walla(a, d, 0.3); rotor(a, d, 0.2, 10)
+    a, d = m['throw']; whoosh(a + 0.1, 0.9, 0.35, (0.0, 0.7)); clank(a + 2.3, 0.55, 0.6); whoosh(a + 3.1, 0.9, 0.35, (0.0, 0.7)); clank(a + 5.3, 0.55, 0.6); rumble(a, d, 0.55, pan=0.6); rotor(a, d, 0.22, 10); walla(a, d, 0.25)
+    a, d = m['takeoff']; rotor(a, d, 0.3, 10, 21, -0.3, g1=0.65); rumble(a, d, 0.9, attack=2.5, pan=0.6); krys(a + 1, d - 1, 0.3, 0.6); grains(a + 2, d - 2, 0.4, 0.5); riser(a + 4.5, 3.5, 0.3)
+    a, d = m['swallow']; rumble(a, d, 1.0, attack=3.0, release=3.5); krys(a, d - 2, 0.25); groan(a + 1.0, 3.8, 0.5, -0.5); grind(a + 2.5, d - 4.5, 0.4); roar(a + 4.6, 4.2, 0.9); grains(a + 4.6, 5.5, 0.6); whoosh(a + 11.0, 1.6, 0.5); gulp(a + 12.3, 1.0)
+
+    ti = tt(int(1.2 * SR))                               # a little room around everything: a short reverb
+    for c in (0, 1):
+        ir = rng.normal(0, 1, len(ti)) * np.exp(-ti * 5.0); ir[:int(0.012 * SR)] = 0
+        size = 1 << (len(out) + len(ir) - 1).bit_length()
+        wet = np.fft.irfft(np.fft.rfft(out[:, c], size) * np.fft.rfft(ir, size), size)[:len(out)]
+        out[:, c] += 0.16 * wet * (np.abs(out[:, c]).max() / (np.abs(wet).max() + 1e-9))
+    out = out[:N] * (0.89 / np.abs(out).max())
     return np.tanh(out * 1.4) / np.tanh(1.4)
 
 
@@ -364,6 +468,9 @@ def main():
     os.makedirs(out, exist_ok=True)
     import film_scene as fs
     words = lines_of()
+    global HAZE, HAZECOL
+    HAZE = np.clip((cv2.resize(rng.random((9, 40)).astype(np.float32), (PW * 2, PH), interpolation=cv2.INTER_CUBIC) - 0.42) * 2.4, 0, 1)
+    HAZECOL = np.array([206, 233, 247], np.float32)
     yy, xx = np.mgrid[0:PH, 0:PW].astype(np.float32)
     vig = 1 - 0.34 * np.clip(((xx - PW / 2) / (PW / 2)) ** 2 * 0.55 + ((yy - PH / 2) / (PH / 2)) ** 2 * 0.45, 0, 1) ** 1.3
     card = lambda rows, gap=22: (lambda c: (c[0] * c[1]).astype(np.uint8))(fs.card(rows, fonts, gap=gap))
@@ -377,7 +484,7 @@ def main():
         'Each frame was divided into parts, the ornithopter, the worm, the men, and each part was moved, turned or bent.',
         'No line was added and nothing was made by a generative model. In the last picture, the paper behind the harvester is filled in from around it.',
         'The sound effects are synthesized: noise and sine waves, no recordings. They and the score are this edition’s.',
-        'Movement, timing, titles and sound: this edition. Unofficial; the art remains the artists’.')])
+        'Movement, timing, the tint of the paper, the dust, the trails, titles and sound: this edition. Unofficial; the art remains the artists’.')])
 
     for sh in SHOTS:
         sh['lab'] = label_layer('SCENE 60 · PLATE %s · %s' % (sh['plate'], 'ITS PARTS, MOVED' if sh.get('colour') else 'ITS INK, MOVED'), fonts)
@@ -387,36 +494,56 @@ def main():
         masks = [(n, poly_mask(a.shape, pts)) for n, pts in sh['layers']]
         rest = np.clip(1 - sum(m for _, m in masks), 0, 1)
         sh['parts'] = [(n, a * np.clip(m, 0, 1)) for n, m in masks] + [('rest', a * rest)]; sh['shape'] = a.shape
+        sky, sand, hor = LOOK.get(sh['id'], {}).get('tint', (SKY, SAND, 0.7))
+        g = np.clip((yy / PH - hor) / 0.16 + 0.5, 0, 1); g = (g * g * (3 - 2 * g))[:, :, None]
+        sh['paper'] = np.array(sky[::-1], np.float32)[None, None, :] * (1 - g) + np.array(sand[::-1], np.float32)[None, None, :] * g
+        sh['ground'] = np.clip((yy / PH - (hor - 0.22)) / 0.3, 0, 1)
         if debug:
             col = np.dstack([255 - a * 255] * 3); tint = [(0, 0, 255), (0, 170, 0), (255, 0, 0)]
             for (n, m), c in zip(masks, tint): col = col * (1 - 0.3 * np.clip(m, 0, 1)[:, :, None]) + np.array(c, np.float32) * 0.3 * np.clip(m, 0, 1)[:, :, None]
             sh['dbg'] = cv2.resize(col.astype(np.uint8), (640, 267))
 
     def picture(sh, u, sec, pose):
-        if sh.get('colour'): return sh['obj'].picture(u, sec, pose), 0.0
-        h, w = sh['shape']; ink = np.zeros((h, w), np.float32)
+        look = LOOK.get(sh['id'], {})
+        if sh.get('colour'): return sh['obj'].picture(u, sec, pose), dict(flash=0.0)
+        h, w = sh['shape']; ink = np.zeros((h, w), np.float32); ghosts = np.zeros((h, w), np.float32)
+        if pose == 0 or 'hist' not in sh: sh['hist'] = {}
         for n, a in sh['parts']:
             if n != 'rest':
                 if sh.get('bend'): a = sh['bend'](n, a, u, sec)
                 a = warp(a, sh['move'](n, u, sec, pose, w, h))
+                if n in look.get('trail', ()):                  # a fast part leaves its last three poses behind it, fading
+                    past = sh['hist'].setdefault(n, [])
+                    for g, op in zip(past, (0.30, 0.18, 0.09)): ghosts = np.maximum(ghosts, g * op)
+                    past.insert(0, a); del past[3:]
             ink = 1 - (1 - ink) * (1 - a)
-        ink = boil(ink, pose, sh.get('boil', 1.3))
+        ink = boil(1 - (1 - ink) * (1 - ghosts), pose, sh.get('boil', 1.3))
         fx = sh['fx'](u, sec, pose) if sh.get('fx') else dict(shake=(0, 0), flash=0.0)
         x0 = (w - PW) / 2 + (w - PW) / 2 * 0.3 * (2 * u - 1) + fx['shake'][0]; y0 = (h - PH) / 2 + fx['shake'][1]
         x0 = int(min(max(0, x0), w - PW)); y0 = int(min(max(0, y0), h - PH))
         win = ink[y0:y0 + PH, x0:x0 + PW][:, :, None]
-        return PAPER[None, None, :] * (1 - win) + INK[None, None, :] * win, fx['flash']
+        pic = sh['paper'] * (1 - win) + INK[None, None, :] * win
+        if look.get('haze') and look['haze'](u) > 0.01:         # dust: soft drifting cloud near the ground, no lines
+            off = int(sec * 70) % PW
+            a = (look['haze'](u) * HAZE[:, off:off + PW] * sh['ground'])[:, :, None]
+            pic = pic * (1 - a) + HAZECOL[None, None, :] * a
+        z, fx_, fy_ = look['zoom'](u, sec) if look.get('zoom') else (1 + 0.05 * u, .5, .5)
+        if z > 1.002:                                           # the camera pushes in
+            cw, ch = PW / z, PH / z; x1 = min(max(0, fx_ * PW - cw / 2), PW - cw); y1 = min(max(0, fy_ * PH - ch / 2), PH - ch)
+            pic = cv2.warpAffine(pic, np.array([[z, 0, -x1 * z], [0, z, -y1 * z]], np.float32), (PW, PH), flags=cv2.INTER_LINEAR)
+        if fx.get('invert'): pic = (255 - pic) * np.array([0.45, 0.72, 1.0], np.float32)       # an impact frame: light on dark, for a sixth of a second
+        return pic, fx
 
-    def frame_of(sh, k, n):
+    def frame_of(sh, k, n, first=False, last=False):
         pose = k // 2; sec = pose * 2 / FPS; u = pose * 2 / max(1, n - 1)
         img = np.zeros((H, W, 3), np.float32)
         if sh.get('held', (None,))[0] != pose: sh['held'] = (pose,) + picture(sh, u, sec, pose)      # on twos: each pose is held for two frames
-        pic, flash = sh['held'][1], sh['held'][2]
+        pic, fx = sh['held'][1], sh['held'][2]
         pic = pic * vig[:, :, None] + cv2.resize(rng.normal(0, 3.2, (PH // 2, PW // 2)).astype(np.float32), (PW, PH))[:, :, None]
-        img[PY:PY + PH] = pic + (255 - pic) * 0.8 * flash
-        t = k / FPS; fade = min(1.0, t / 0.45, (n - 1 - k) / FPS / 0.45)
+        img[PY:PY + PH] = pic + (np.array([190, 226, 255], np.float32) - pic) * 0.85 * (0.0 if fx.get('invert') else fx.get('flash', 0.0))     # the flash follows the impact frames
+        t = k / FPS; fade = min(1.0, t / 0.45 if first else 1.0, (n - 1 - k) / FPS / 0.7 if last else 1.0)       # shots cut; only the film fades
         caps = sh['caps']; part = sh['sec'] / len(caps); i = min(len(caps) - 1, int(t / part)); tin = t - i * part
-        al = caps[i][1] * min(1.0, tin / 0.4, (part - tin) / 0.4 if i < len(caps) - 1 else 1.0)
+        al = caps[i][1] * min(1.0, tin / 0.25, (part - tin) / 0.25 if i < len(caps) - 1 else 1.0)
         img = img * (1 - al) + caps[i][0] * al
         img = img * (1 - sh['lab'][1]) + sh['lab'][0] * sh['lab'][1]
         return np.clip(img * ease(fade), 0, 255).astype(np.uint8)
@@ -444,15 +571,15 @@ def main():
     marks = {}
     for sh in SHOTS:
         n = int(sh['sec'] * FPS); marks[sh['id']] = (round(total / FPS, 3), sh['sec'])
-        for k in range(n): ff.stdin.write(frame_of(sh, k, n).tobytes()); total += 1
+        for k in range(n): ff.stdin.write(frame_of(sh, k, n, sh is SHOTS[0], sh is SHOTS[-1]).tobytes()); total += 1
         print('shot', sh['id'], 'done', flush=True)
     body_end = total / FPS
     card_frames(end, 9.0)
     ff.stdin.close(); ff.wait(); dur = total / FPS
 
-    x = sfx_track(marks, body_end + 1.5)
+    x = sfx_track(marks, body_end + 4.0)
     with wave.open(os.path.join(out, 'wormanim-sfx.wav'), 'wb') as wv:
-        wv.setnchannels(1); wv.setsampwidth(2); wv.setframerate(SR); wv.writeframes((x * 32000).astype(np.int16).tobytes())
+        wv.setnchannels(2); wv.setsampwidth(2); wv.setframerate(SR); wv.writeframes((x * 32000).astype(np.int16).tobytes())
     m = marks
     cues = [dict(t=0, intensity=0.3, ramp=2), dict(t=m['orni'][0], intensity=0.4, ramp=2, accent='swell'), dict(t=m['dive'][0], intensity=0.55, ramp=2),
             dict(t=m['rise'][0], intensity=0.8, ramp=2, accent='swell'), dict(t=m['accel'][0], intensity=0.7, ramp=1.5), dict(t=m['refuse'][0], intensity=0.55, ramp=2),
